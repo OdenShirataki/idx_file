@@ -1,0 +1,17 @@
+[package]
+name = "indexed_data_file"
+version = "0.1.0"
+edition = "2021"
+
+authors = ["Oden Shirataki <oden.srtk@gmail.com>"]
+
+description = "Indexed data file. It uses mmap and tri-avltree."
+
+repository = "https://github.com/OdenShirataki/indexed_data_file"
+
+keywords = ["index","file","mmap","memmap","search","data","database"]
+license = "MIT"
+
+[dependencies]
+tri_avltree="0.1"
+file_mmap="0.1"
