@@ -9,7 +9,7 @@ description = "Indexed data file. It uses mmap and tri-avltree."
 
 repository = "https://github.com/OdenShirataki/indexed_data_file"
 
-keywords = ["index","file","mmap","memmap","search","data","database"]
+keywords = ["index","file","avltree","memmap","data"]
 license = "MIT"
 
 [dependencies]
