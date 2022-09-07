@@ -2,7 +2,7 @@ use std::mem;
 use std::cmp::Ordering;
 
 use file_mmap::*;
-use tri_avltree::{TriAVLTree,node::TriAVLTreeNode};
+use tri_avltree::{TriAVLTree,TriAVLTreeNode};
 
 pub struct IndexedDataFile<T>{
     mmap:FileMmap

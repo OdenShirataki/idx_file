@@ -1,6 +1,6 @@
 [package]
 name = "indexed_data_file"
-version = "0.3.0"
+version = "0.4.0"
 edition = "2021"
 
 authors = ["Oden Shirataki <oden.srtk@gmail.com>"]
@@ -13,5 +13,5 @@ keywords = ["index","file","avltree","memmap","data"]
 license = "MIT"
 
 [dependencies]
-tri_avltree={ path="../tri_avltree" , version="0.3" }
+tri_avltree={ path="../tri_avltree" , version="0.4" }
 file_mmap={ path="../file_mmap" , version="0.1" }
