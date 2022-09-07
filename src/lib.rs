@@ -45,7 +45,7 @@ impl<T: std::default::Default + std::fmt::Debug + Copy> IndexedDataFile<T>{
             let (ord,found_id)=self.tree.search(&target);
             assert_ne!(0,found_id);
             if ord==Ordering::Equal{
-                self.add_same(found_id,target)
+                self.add_same(found_id)
             }else{
                 self.add_new(target,found_id,ord)
             }
@@ -96,12 +96,12 @@ impl<T: std::default::Default + std::fmt::Debug + Copy> IndexedDataFile<T>{
              }
          }
     }
-    pub fn add_same(&mut self,root:i64,data:T)->Option<i64>{
+    pub fn add_same(&mut self,root:i64)->Option<i64>{
         match self.resize(){
             Err(_)=>None
-            ,Ok(newid)=>{
-                self.tree.update_same(root,newid as i64,data);
-                Some(newid as i64)
+            ,Ok(new_id)=>{
+                self.tree.update_same(root,new_id as i64);
+                Some(new_id as i64)
             }
         }
     }

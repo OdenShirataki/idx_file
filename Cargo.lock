@@ -11,7 +11,7 @@ dependencies = [
 
 [[package]]
 name = "indexed_data_file"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "file_mmap",
  "tri_avltree",
@@ -40,7 +40,7 @@ checksum = "08d43f7aa6b08d49f382cde6a7982047c3426db949b1424bc4b7ec9ae12c6ce2"
 
 [[package]]
 name = "tri_avltree"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "rustc-hash",
 ]
