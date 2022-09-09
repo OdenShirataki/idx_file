@@ -1,11 +1,11 @@
 [package]
 name = "indexed_data_file"
-version = "0.4.0"
+version = "0.5.0"
 edition = "2021"
 
 authors = ["Oden Shirataki <oden.srtk@gmail.com>"]
 
-description = "Indexed data file. It uses mmap and tri-avltree."
+description = "Indexed data file. It uses mmap and avltiree."
 
 repository = "https://github.com/OdenShirataki/indexed_data_file"
 
@@ -13,5 +13,5 @@ keywords = ["index","file","avltree","memmap","data"]
 license = "MIT"
 
 [dependencies]
-tri_avltree={ path="../tri_avltree" , version="0.4" }
+avltriee={ path="../avltriee" , version="0.5" }
 file_mmap={ path="../file_mmap" , version="0.1" }

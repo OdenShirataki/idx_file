@@ -2,11 +2,11 @@ use std::mem;
 use std::cmp::Ordering;
 
 use file_mmap::*;
-use tri_avltree::{TriAVLTree,TriAVLTreeNode};
+use avltriee::{AVLTriee,AVLTrieeNode};
 
 pub struct IndexedDataFile<T>{
     mmap:FileMmap
-    ,tree:TriAVLTree<T>
+    ,tree:AVLTriee<T>
 }
 
 impl<T: std::default::Default + std::fmt::Debug + Copy> IndexedDataFile<T>{
@@ -20,22 +20,22 @@ impl<T: std::default::Default + std::fmt::Debug + Copy> IndexedDataFile<T>{
         let record_count=if len==init_size{
             0
         }else{
-            (len-init_size)/mem::size_of::<TriAVLTreeNode<T>>() as u64 - 1
+            (len-init_size)/mem::size_of::<AVLTrieeNode<T>>() as u64 - 1
         };
         let ep=unsafe{
             filemmap.as_mut_ptr().offset(init_size as isize)
-        } as *mut TriAVLTreeNode<T>;
+        } as *mut AVLTrieeNode<T>;
         Ok(IndexedDataFile{
             mmap:filemmap
-            ,tree:TriAVLTree::new(
+            ,tree:AVLTriee::new(
                 p,ep,record_count as usize
             )
         })
     }
-    pub fn tree_mut(&mut self)->&mut TriAVLTree<T>{
+    pub fn tree_mut(&mut self)->&mut AVLTriee<T>{
         &mut self.tree
     }
-    pub fn tree(&self)->&TriAVLTree<T>{
+    pub fn tree(&self)->&AVLTriee<T>{
         &self.tree
     }
     pub fn insert(&mut self,target:T)->Option<i64> where T:Default + std::cmp::Ord{
@@ -53,7 +53,7 @@ impl<T: std::default::Default + std::fmt::Debug + Copy> IndexedDataFile<T>{
     }
     pub fn resize_to(&mut self,record_count:i64)->Result<i64,std::io::Error>{
         let size=mem::size_of::<u64>()
-            +mem::size_of::<TriAVLTreeNode<T>>()*(1+record_count as usize)
+            +mem::size_of::<AVLTrieeNode<T>>()*(1+record_count as usize)
         ;
         if self.mmap.len()<size as u64{
             self.tree.set_record_count(record_count as usize);
@@ -64,14 +64,14 @@ impl<T: std::default::Default + std::fmt::Debug + Copy> IndexedDataFile<T>{
     fn resize(&mut self)->Result<u64,std::io::Error>{
         self.tree.add_record_count(1);
         let size=mem::size_of::<u64>()
-            +mem::size_of::<TriAVLTreeNode<T>>()*(1+self.tree.record_count() as usize)
+            +mem::size_of::<AVLTrieeNode<T>>()*(1+self.tree.record_count() as usize)
         ;
         self.mmap.set_len(size as u64)?;
         Ok(self.tree.record_count() as u64)
     }
     pub fn init(&mut self,data:T)->Option<i64>{
         if let Err(_)=self.mmap.set_len((
-            mem::size_of::<u64>()+mem::size_of::<TriAVLTreeNode<T>>()*2
+            mem::size_of::<u64>()+mem::size_of::<AVLTrieeNode<T>>()*2
         ) as u64){
             None
         }else{
