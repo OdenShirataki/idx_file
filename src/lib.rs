@@ -46,11 +46,17 @@ impl<T: std::default::Default + std::fmt::Debug + Copy> IndexedDataFile<T>{
             let (ord,found_id)=self.triee.search(&target);
             assert_ne!(0,found_id);
             if ord==Ordering::Equal{
-                self.add_same(found_id)
+                self.insert_same(found_id)
             }else{
-                self.add_new(target,found_id,ord)
+                self.insert_unique(target,found_id,ord)
             }
         }
+    }
+    pub fn update(&mut self,id:u32,value:T) where T:std::cmp::Ord{
+        self.triee.update(id,value);
+    }
+    pub fn delete(&mut self,id:u32){
+        self.triee.remove(id);
     }
     pub fn resize_to(&mut self,record_count:u32)->Result<u32,std::io::Error>{
         let size=mem::size_of::<usize>()
@@ -80,7 +86,7 @@ impl<T: std::default::Default + std::fmt::Debug + Copy> IndexedDataFile<T>{
             Some(1)
         }
     }
-    pub fn add_new(&mut self
+    pub fn insert_unique(&mut self
         ,data:T
         ,root: u32   //起点ノード（親ノード）
         ,ord: Ordering
@@ -90,14 +96,14 @@ impl<T: std::default::Default + std::fmt::Debug + Copy> IndexedDataFile<T>{
         }else{
             match self.resize(){
                 Err(_)=>None
-                ,Ok(newid)=>{
-                    self.triee.update_node(root,newid,data,ord);
-                    Some(newid)
+                ,Ok(new_id)=>{
+                    self.triee.update_node(root,new_id,data,ord);
+                    Some(new_id)
                  }
              }
          }
     }
-    pub fn add_same(&mut self,root:u32)->Option<u32>{
+    pub fn insert_same(&mut self,root:u32)->Option<u32>{
         match self.resize(){
             Err(_)=>None
             ,Ok(new_id)=>{
