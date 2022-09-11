@@ -6,15 +6,16 @@ use avltriee::{AVLTriee,AVLTrieeNode};
 
 pub struct IndexedDataFile<T>{
     mmap:FileMmap
-    ,tree:AVLTriee<T>
+    ,triee:AVLTriee<T>
 }
 
 impl<T: std::default::Default + std::fmt::Debug + Copy> IndexedDataFile<T>{
     pub fn new(path:&str) -> Result<IndexedDataFile<T>,std::io::Error>{
-        let init_size=mem::size_of::<i64>() as u64;
+        let init_size=mem::size_of::<usize>() as u64;   //ファイルの先頭にはtrieeのrootのポインタが入る。
+                                                        //但し、アライメントを考慮して33bit-ワード長まではパディングされるようにusizeで計算しておく
         let mut filemmap=FileMmap::new(path,init_size)?;
 
-        let p=filemmap.as_ptr() as *mut i64;
+        let p=filemmap.as_ptr() as *mut u32;
 
         let len=filemmap.len();
         let record_count=if len==init_size{
@@ -27,22 +28,22 @@ impl<T: std::default::Default + std::fmt::Debug + Copy> IndexedDataFile<T>{
         } as *mut AVLTrieeNode<T>;
         Ok(IndexedDataFile{
             mmap:filemmap
-            ,tree:AVLTriee::new(
-                p,ep,record_count as usize
+            ,triee:AVLTriee::new(
+                p,ep,record_count as u32
             )
         })
     }
-    pub fn tree_mut(&mut self)->&mut AVLTriee<T>{
-        &mut self.tree
+    pub fn triee_mut(&mut self)->&mut AVLTriee<T>{
+        &mut self.triee
     }
-    pub fn tree(&self)->&AVLTriee<T>{
-        &self.tree
+    pub fn triee(&self)->&AVLTriee<T>{
+        &self.triee
     }
-    pub fn insert(&mut self,target:T)->Option<i64> where T:Default + std::cmp::Ord{
-        if self.tree.record_count()==0{ //データがまだ無い場合は新規登録
+    pub fn insert(&mut self,target:T)->Option<u32> where T:Default + std::cmp::Ord{
+        if self.triee.record_count()==0{ //データがまだ無い場合は新規登録
             self.init(target)
         }else{
-            let (ord,found_id)=self.tree.search(&target);
+            let (ord,found_id)=self.triee.search(&target);
             assert_ne!(0,found_id);
             if ord==Ordering::Equal{
                 self.add_same(found_id)
@@ -51,57 +52,57 @@ impl<T: std::default::Default + std::fmt::Debug + Copy> IndexedDataFile<T>{
             }
         }
     }
-    pub fn resize_to(&mut self,record_count:i64)->Result<i64,std::io::Error>{
-        let size=mem::size_of::<u64>()
+    pub fn resize_to(&mut self,record_count:u32)->Result<u32,std::io::Error>{
+        let size=mem::size_of::<usize>()
             +mem::size_of::<AVLTrieeNode<T>>()*(1+record_count as usize)
         ;
         if self.mmap.len()<size as u64{
-            self.tree.set_record_count(record_count as usize);
+            self.triee.set_record_count(record_count);
             self.mmap.set_len(size as u64)?;
         }
         Ok(record_count)
     }
-    fn resize(&mut self)->Result<u64,std::io::Error>{
-        self.tree.add_record_count(1);
-        let size=mem::size_of::<u64>()
-            +mem::size_of::<AVLTrieeNode<T>>()*(1+self.tree.record_count() as usize)
+    fn resize(&mut self)->Result<u32,std::io::Error>{
+        self.triee.add_record_count(1);
+        let size=mem::size_of::<usize>()
+            +mem::size_of::<AVLTrieeNode<T>>()*(1+self.triee.record_count() as usize)
         ;
         self.mmap.set_len(size as u64)?;
-        Ok(self.tree.record_count() as u64)
+        Ok(self.triee.record_count())
     }
-    pub fn init(&mut self,data:T)->Option<i64>{
+    pub fn init(&mut self,data:T)->Option<u32>{
         if let Err(_)=self.mmap.set_len((
-            mem::size_of::<u64>()+mem::size_of::<AVLTrieeNode<T>>()*2
+            mem::size_of::<usize>()+mem::size_of::<AVLTrieeNode<T>>()*2
         ) as u64){
             None
         }else{
-            self.tree.init_node(data);
+            self.triee.init_node(data);
             Some(1)
         }
     }
     pub fn add_new(&mut self
         ,data:T
-        ,root: i64   //起点ノード（親ノード）
+        ,root: u32   //起点ノード（親ノード）
         ,ord: Ordering
-    )->Option<i64> where T:Default{
+    )->Option<u32> where T:Default{
         if root==0{    //初回登録
             self.init(data)
         }else{
             match self.resize(){
                 Err(_)=>None
                 ,Ok(newid)=>{
-                    self.tree.update_node(root,newid as i64,data,ord);
-                    Some(newid as i64)
+                    self.triee.update_node(root,newid,data,ord);
+                    Some(newid)
                  }
              }
          }
     }
-    pub fn add_same(&mut self,root:i64)->Option<i64>{
+    pub fn add_same(&mut self,root:u32)->Option<u32>{
         match self.resize(){
             Err(_)=>None
             ,Ok(new_id)=>{
-                self.tree.update_same(root,new_id as i64);
-                Some(new_id as i64)
+                self.triee.update_same(root,new_id);
+                Some(new_id)
             }
         }
     }
