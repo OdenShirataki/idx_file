@@ -4,11 +4,13 @@ use std::cmp::Ordering;
 use file_mmap::*;
 use avltriee::{AVLTriee,AVLTrieeNode};
 
+pub type RemoveResult<T>=avltriee::RemoveResult<T>;
+pub type IdSet=avltriee::IdSet;
+
 pub struct IndexedDataFile<T>{
     mmap:FileMmap
     ,triee:AVLTriee<T>
 }
-
 impl<T: std::default::Default + std::fmt::Debug + Copy> IndexedDataFile<T>{
     pub fn new(path:&str) -> Result<IndexedDataFile<T>,std::io::Error>{
         let init_size=mem::size_of::<usize>() as u64;   //ファイルの先頭にはtrieeのrootのポインタが入る。
@@ -55,8 +57,8 @@ impl<T: std::default::Default + std::fmt::Debug + Copy> IndexedDataFile<T>{
     pub fn update(&mut self,id:u32,value:T) where T:std::cmp::Ord{
         self.triee.update(id,value);
     }
-    pub fn delete(&mut self,id:u32){
-        self.triee.remove(id);
+    pub fn delete(&mut self,id:u32)->RemoveResult<T>{
+        self.triee.remove(id)
     }
     pub fn resize_to(&mut self,record_count:u32)->Result<u32,std::io::Error>{
         let size=mem::size_of::<usize>()
