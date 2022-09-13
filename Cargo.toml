@@ -1,6 +1,6 @@
 [package]
 name = "indexed_data_file"
-version = "0.6.2"
+version = "0.6.3"
 edition = "2021"
 
 authors = ["Oden Shirataki <oden.srtk@gmail.com>"]
@@ -10,7 +10,7 @@ description = "Indexed data file. It uses mmap and avltiree."
 repository = "https://github.com/OdenShirataki/indexed_data_file"
 
 keywords = ["index","file","avltree","memmap","data"]
-license = "MIT"
+license = "MIT/Apache-2.0"
 
 [dependencies]
 avltriee={ path="../avltriee" , version="0.6" }
