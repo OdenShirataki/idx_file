@@ -4,8 +4,8 @@ use std::cmp::Ordering;
 use file_mmap::*;
 use avltriee::{AVLTriee,AVLTrieeNode};
 
-pub type RemoveResult<T>=avltriee::RemoveResult<T>;
-pub type IdSet=avltriee::IdSet;
+pub use avltriee::RemoveResult;
+pub use avltriee::IdSet;
 
 pub struct IndexedDataFile<T>{
     mmap:FileMmap

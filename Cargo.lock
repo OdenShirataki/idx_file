@@ -4,7 +4,7 @@ version = 3
 
 [[package]]
 name = "avltriee"
-version = "0.6.2"
+version = "0.6.3"
 dependencies = [
  "rustc-hash",
 ]
@@ -18,7 +18,7 @@ dependencies = [
 
 [[package]]
 name = "indexed_data_file"
-version = "0.6.3"
+version = "0.6.4"
 dependencies = [
  "avltriee",
  "file_mmap",
