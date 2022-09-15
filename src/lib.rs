@@ -1,7 +1,7 @@
 use std::mem;
 use std::cmp::Ordering;
 
-use file_mmap::*;
+use file_mmap::FileMmap;
 use avltriee::{AVLTriee,AVLTrieeNode};
 
 pub use avltriee::RemoveResult;
@@ -11,7 +11,8 @@ pub struct IndexedDataFile<T>{
     mmap:FileMmap
     ,triee:AVLTriee<T>
 }
-impl<T: std::default::Default + std::fmt::Debug + Copy> IndexedDataFile<T>{
+
+impl<T: std::default::Default + Copy> IndexedDataFile<T>{
     pub fn new(path:&str) -> Result<IndexedDataFile<T>,std::io::Error>{
         let init_size=mem::size_of::<usize>() as u64;   //ファイルの先頭にはtrieeのrootのポインタが入る。
                                                         //但し、アライメントを考慮して33bit-ワード長まではパディングされるようにusizeで計算しておく

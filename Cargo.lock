@@ -18,7 +18,7 @@ dependencies = [
 
 [[package]]
 name = "indexed_data_file"
-version = "0.6.4"
+version = "0.6.5"
 dependencies = [
  "avltriee",
  "file_mmap",
