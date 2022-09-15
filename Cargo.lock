@@ -11,14 +11,14 @@ dependencies = [
 
 [[package]]
 name = "file_mmap"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "memmap2",
 ]
 
 [[package]]
 name = "indexed_data_file"
-version = "0.6.5"
+version = "0.6.6"
 dependencies = [
  "avltriee",
  "file_mmap",

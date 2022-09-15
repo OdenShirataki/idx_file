@@ -42,6 +42,9 @@ impl<T: std::default::Default + Copy> IndexedDataFile<T>{
     pub fn triee(&self)->&AVLTriee<T>{
         &self.triee
     }
+    pub fn value(&self,id:u32)->Option<T>{
+        self.triee.entity_value(id).map(|v|*v)
+    }
     pub fn insert(&mut self,target:T)->Option<u32> where T:Default + std::cmp::Ord{
         if self.triee.record_count()==0{ //データがまだ無い場合は新規登録
             self.init(target)
