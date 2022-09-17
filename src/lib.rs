@@ -7,29 +7,24 @@ use avltriee::{AVLTriee,AVLTrieeNode};
 pub use avltriee::RemoveResult;
 pub use avltriee::IdSet;
 
-pub struct IndexedDataFile<T>{
+pub struct IdxSized<T>{
     mmap:FileMmap
     ,triee:AVLTriee<T>
 }
 
-impl<T: std::default::Default + Copy> IndexedDataFile<T>{
-    pub fn new(path:&str) -> Result<IndexedDataFile<T>,std::io::Error>{
-        let init_size=mem::size_of::<usize>() as u64;   //ファイルの先頭にはtrieeのrootのポインタが入る。
-                                                        //但し、アライメントを考慮して33bit-ワード長まではパディングされるようにusizeで計算しておく
-        let mut filemmap=FileMmap::new(path,init_size)?;
-
-        let p=filemmap.as_ptr() as *mut u32;
-
+impl<T: std::default::Default + Copy> IdxSized<T>{
+    pub fn new(path:&str) -> Result<IdxSized<T>,std::io::Error>{
+        let init_size=mem::size_of::<usize>() as u64;   //ファイルの先頭にはtrieeのrootのポインタが入る。但し、アライメントを考慮して33bit-ワード長まではパディングされるようにusizeで計算しておく
+        let filemmap=FileMmap::new(path,init_size)?;
         let len=filemmap.len();
         let record_count=if len==init_size{
             0
         }else{
             (len-init_size)/mem::size_of::<AVLTrieeNode<T>>() as u64 - 1
         };
-        let ep=unsafe{
-            filemmap.as_mut_ptr().offset(init_size as isize)
-        } as *mut AVLTrieeNode<T>;
-        Ok(IndexedDataFile{
+        let ep=filemmap.offset(init_size as isize) as *mut AVLTrieeNode<T>;
+        let p=filemmap.as_ptr() as *mut u32;
+        Ok(IdxSized{
             mmap:filemmap
             ,triee:AVLTriee::new(
                 p,ep,record_count as u32
