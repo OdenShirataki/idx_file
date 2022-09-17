@@ -1,6 +1,6 @@
 [package]
 name = "idx_sized"
-version = "0.7.0"
+version = "0.8.0"
 edition = "2021"
 
 authors = ["Oden Shirataki <oden.srtk@gmail.com>"]
@@ -13,5 +13,5 @@ keywords = ["index","file","avltree","memmap","data"]
 license = "MIT/Apache-2.0"
 
 [dependencies]
-avltriee={ path="../avltriee" , version="0.7" }
+avltriee={ path="../avltriee" , version="0.8" }
 file_mmap={ path="../file_mmap" , version="0.3" }

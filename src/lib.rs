@@ -114,9 +114,24 @@ impl<T: std::default::Default + Copy> IdxSized<T>{
             }
         }
     }
-    pub fn get_by_range(&self,value_min:&T,value_max:&T)->HashSet<u32> where T:std::cmp::Ord{
+
+    pub fn select_by_value_from_to(&self,value_min:&T,value_max:&T)->HashSet<u32> where T:std::cmp::Ord{
         let mut result=HashSet::new();
-        for (_,i,_) in self.triee().iter_range(value_min,value_max){
+        for (_,i,_) in self.triee().iter_by_value_from_to(value_min,value_max){
+            result.insert(i);
+        }
+        result
+    }
+    pub fn select_by_value_from(&self,value_min:&T)->HashSet<u32> where T:std::cmp::Ord{
+        let mut result=HashSet::new();
+        for (_,i,_) in self.triee().iter_by_value_from(value_min){
+            result.insert(i);
+        }
+        result
+    }
+    pub fn select_by_value_to(&self,value_max:&T)->HashSet<u32> where T:std::cmp::Ord{
+        let mut result=HashSet::new();
+        for (_,i,_) in self.triee().iter_by_value_to(value_max){
             result.insert(i);
         }
         result
