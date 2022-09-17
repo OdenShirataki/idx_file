@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::mem;
 use std::cmp::Ordering;
 
@@ -112,5 +113,12 @@ impl<T: std::default::Default + Copy> IdxSized<T>{
                 Some(new_id)
             }
         }
+    }
+    pub fn get_by_range(&self,value_min:&T,value_max:&T)->HashSet<u32> where T:std::cmp::Ord{
+        let mut result=HashSet::new();
+        for (_,i,_) in self.triee().iter_range(value_min,value_max){
+            result.insert(i);
+        }
+        result
     }
 }
