@@ -115,7 +115,6 @@ impl<T: std::default::Default + Copy> IdxSized<T>{
          }
     }
     pub fn insert_same(&mut self,root:u32,insert_id:u32)->Option<u32>{
-        ///ここおかしい。
         match self.resize(insert_id){
             Err(_)=>None
             ,Ok(new_id)=>{
