@@ -47,7 +47,7 @@ impl<T: std::default::Default + Copy> IdxSized<T>{
             let (ord,found_id)=self.triee.search(&target);
             assert_ne!(0,found_id);
             if ord==Ordering::Equal{
-                self.insert_same(found_id)
+                self.insert_same(found_id,0)
             }else{
                 self.insert_unique(target,found_id,ord,0)
             }
@@ -70,7 +70,6 @@ impl<T: std::default::Default + Copy> IdxSized<T>{
         Ok(record_count)
     }
     fn resize(&mut self,insert_id:u32)->Result<u32,std::io::Error>{
-        //飛び番でデータ挿入された時に死ぬ
         let new_record_count=self.triee.add_record_count(1);
         let sizing_count=if insert_id!=0{
             insert_id
@@ -115,8 +114,9 @@ impl<T: std::default::Default + Copy> IdxSized<T>{
              }
          }
     }
-    pub fn insert_same(&mut self,root:u32)->Option<u32>{
-        match self.resize(0){
+    pub fn insert_same(&mut self,root:u32,insert_id:u32)->Option<u32>{
+        ///ここおかしい。
+        match self.resize(insert_id){
             Err(_)=>None
             ,Ok(new_id)=>{
                 self.triee.update_same(root,new_id);
