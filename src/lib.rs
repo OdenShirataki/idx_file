@@ -42,14 +42,14 @@ impl<T: std::default::Default + Copy> IdxSized<T>{
     }
     pub fn insert(&mut self,target:T)->Option<u32> where T:Default + std::cmp::Ord{
         if self.triee.record_count()==0{ //データがまだ無い場合は新規登録
-            self.init(target)
+            self.init(target,1)
         }else{
             let (ord,found_id)=self.triee.search(&target);
             assert_ne!(0,found_id);
             if ord==Ordering::Equal{
                 self.insert_same(found_id)
             }else{
-                self.insert_unique(target,found_id,ord)
+                self.insert_unique(target,found_id,ord,0)
             }
         }
     }
@@ -69,33 +69,44 @@ impl<T: std::default::Default + Copy> IdxSized<T>{
         }
         Ok(record_count)
     }
-    fn resize(&mut self)->Result<u32,std::io::Error>{
-        self.triee.add_record_count(1);
+    fn resize(&mut self,insert_id:u32)->Result<u32,std::io::Error>{
+        //飛び番でデータ挿入された時に死ぬ
+        let new_record_count=self.triee.add_record_count(1);
+        let sizing_count=if insert_id!=0{
+            insert_id
+        }else{
+            new_record_count
+        };
         let size=mem::size_of::<usize>()
-            +mem::size_of::<AVLTrieeNode<T>>()*(1+self.triee.record_count() as usize)
+            +mem::size_of::<AVLTrieeNode<T>>()*(1+sizing_count as usize)
         ;
-        self.mmap.set_len(size as u64)?;
-        Ok(self.triee.record_count())
+        if (self.mmap.len() as usize)<size{
+            self.mmap.set_len(size as u64)?;
+        }
+        
+        Ok(sizing_count)
     }
-    pub fn init(&mut self,data:T)->Option<u32>{
+    pub fn init(&mut self,data:T,root:u32)->Option<u32>{
         if let Err(_)=self.mmap.set_len((
-            mem::size_of::<usize>()+mem::size_of::<AVLTrieeNode<T>>()*2
+            mem::size_of::<usize>()
+            +mem::size_of::<AVLTrieeNode<T>>()*(root as usize+1)
         ) as u64){
             None
         }else{
-            self.triee.init_node(data);
-            Some(1)
+            self.triee.init_node(data,root);
+            Some(root)
         }
     }
     pub fn insert_unique(&mut self
         ,data:T
         ,root: u32   //起点ノード（親ノード）
         ,ord: Ordering
+        ,insert_id:u32
     )->Option<u32> where T:Default{
         if root==0{    //初回登録
-            self.init(data)
+            self.init(data,insert_id)
         }else{
-            match self.resize(){
+            match self.resize(insert_id){
                 Err(_)=>None
                 ,Ok(new_id)=>{
                     self.triee.update_node(root,new_id,data,ord);
@@ -105,7 +116,7 @@ impl<T: std::default::Default + Copy> IdxSized<T>{
          }
     }
     pub fn insert_same(&mut self,root:u32)->Option<u32>{
-        match self.resize(){
+        match self.resize(0){
             Err(_)=>None
             ,Ok(new_id)=>{
                 self.triee.update_same(root,new_id);

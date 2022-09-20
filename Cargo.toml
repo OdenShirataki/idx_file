@@ -13,5 +13,5 @@ keywords = ["index","file","avltree","memmap","data"]
 license = "MIT/Apache-2.0"
 
 [dependencies]
-avltriee={ path="../avltriee" , version="0.9" }
+avltriee={ path="../avltriee" , version="0.10" }
 file_mmap={ path="../file_mmap" , version="0.3" }
