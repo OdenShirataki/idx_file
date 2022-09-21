@@ -63,7 +63,7 @@ impl<T: std::default::Default + Copy> IdxSized<T>{
         }
         Ok(record_count)
     }
-    fn max_id(&self)->u32{
+    pub fn max_id(&self)->u32{
         let len=self.mmap.len();
         
         ((len-INIT_SIZE)/mem::size_of::<AVLTrieeNode<T>>() as u64) as u32
