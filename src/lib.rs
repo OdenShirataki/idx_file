@@ -1,11 +1,19 @@
 use std::mem;
 use std::cmp::Ordering;
 
+use rustc_hash::FxHasher;
+use std::hash::BuildHasherDefault;
+use std::collections::HashSet;
+
 use file_mmap::FileMmap;
-use avltriee::{AVLTriee,AVLTrieeNode};
+use avltriee::{
+    AVLTriee
+    ,AVLTrieeNode
+};
 
 pub use avltriee::RemoveResult;
-pub use avltriee::IdSet;
+
+pub type IdSet = HashSet<u32,BuildHasherDefault<FxHasher>>;
 
 pub struct IdxSized<T>{
     mmap:FileMmap

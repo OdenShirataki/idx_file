@@ -4,10 +4,7 @@ version = 3
 
 [[package]]
 name = "avltriee"
-version = "0.11.3"
-dependencies = [
- "rustc-hash",
-]
+version = "0.12.0"
 
 [[package]]
 name = "file_mmap"
@@ -18,10 +15,11 @@ dependencies = [
 
 [[package]]
 name = "idx_sized"
-version = "0.9.4"
+version = "0.9.5"
 dependencies = [
  "avltriee",
  "file_mmap",
+ "rustc-hash",
 ]
 
 [[package]]
