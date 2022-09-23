@@ -131,6 +131,14 @@ impl<T: std::default::Default + Copy> IdxSized<T>{
         }
     }
 
+    pub fn select_by_value(&self,value:&T)->RowSet where T:std::cmp::Ord{
+        let mut result=RowSet::default();
+        let (ord,row)=self.triee().search(value);
+        if ord==Ordering::Equal{
+            result.insert(row);
+        }
+        result
+    }
     pub fn select_by_value_from_to(&self,value_min:&T,value_max:&T)->RowSet where T:std::cmp::Ord{
         let mut result=RowSet::default();
         for (_,i,_) in self.triee().iter_by_value_from_to(value_min,value_max){
