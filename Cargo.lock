@@ -8,14 +8,14 @@ version = "0.14.0"
 
 [[package]]
 name = "file_mmap"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "memmap2",
 ]
 
 [[package]]
 name = "idx_sized"
-version = "0.10.4"
+version = "0.10.5"
 dependencies = [
  "avltriee",
  "file_mmap",
