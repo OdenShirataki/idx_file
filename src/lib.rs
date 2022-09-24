@@ -1,9 +1,7 @@
 use std::mem;
 use std::cmp::Ordering;
 
-use rustc_hash::FxHasher;
-use std::hash::BuildHasherDefault;
-use std::collections::HashSet;
+use std::collections::BTreeSet;
 
 use file_mmap::FileMmap;
 use avltriee::{
@@ -13,7 +11,7 @@ use avltriee::{
 
 pub use avltriee::RemoveResult;
 
-pub type RowSet = HashSet<u32,BuildHasherDefault<FxHasher>>;
+pub type RowSet = BTreeSet<u32>;
 
 pub struct IdxSized<T>{
     mmap:FileMmap
