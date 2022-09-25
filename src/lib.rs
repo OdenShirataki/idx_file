@@ -2,11 +2,11 @@ use std::mem;
 use std::cmp::Ordering;
 use std::collections::BTreeSet;
 use file_mmap::FileMmap;
-use avltriee::{
+use avltriee::AvltrieeNode;
+pub use avltriee::{
     Avltriee
-    ,AvltrieeNode
+    ,RemoveResult
 };
-pub use avltriee::RemoveResult;
 
 pub type RowSet = BTreeSet<u32>;
 
