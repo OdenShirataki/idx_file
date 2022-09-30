@@ -4,7 +4,7 @@ version = 3
 
 [[package]]
 name = "avltriee"
-version = "0.14.0"
+version = "0.14.1"
 
 [[package]]
 name = "file_mmap"
@@ -15,7 +15,7 @@ dependencies = [
 
 [[package]]
 name = "idx_sized"
-version = "0.10.8"
+version = "0.10.1"
 dependencies = [
  "avltriee",
  "file_mmap",
@@ -23,9 +23,9 @@ dependencies = [
 
 [[package]]
 name = "libc"
-version = "0.2.133"
+version = "0.2.134"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c0f80d65747a3e43d1596c7c5492d95d5edddaabd45a7fcdb02b95f644164966"
+checksum = "329c933548736bc49fd575ee68c89e8be4d260064184389a5b77517cddd99ffb"
 
 [[package]]
 name = "memmap2"
