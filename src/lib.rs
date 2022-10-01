@@ -105,7 +105,11 @@ impl<T: std::default::Default + Copy> IdxSized<T>{
         ,insert_row:u32
     )->Option<u32> where T:Default{
         if root==0{    //初回登録
-            self.init(data,insert_row)
+            self.init(data,if insert_row==0{
+                1
+            }else{
+                insert_row
+            })
         }else{
             match self.resize(insert_row){
                 Err(_)=>None
