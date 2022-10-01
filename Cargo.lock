@@ -4,7 +4,7 @@ version = 3
 
 [[package]]
 name = "avltriee"
-version = "0.14.1"
+version = "0.14.2"
 
 [[package]]
 name = "file_mmap"
@@ -15,7 +15,7 @@ dependencies = [
 
 [[package]]
 name = "idx_sized"
-version = "0.10.10"
+version = "0.10.11"
 dependencies = [
  "avltriee",
  "file_mmap",
