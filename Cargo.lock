@@ -10,9 +10,9 @@ checksum = "67ab65405c876bda8cdae1b1c5592bbcb4872f9c5aa3eba7980648cab33abe4d"
 
 [[package]]
 name = "file_mmap"
-version = "0.4.0"
+version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2a683f29e376fab50e1679e96416fda2281b70d1851eed663d2c0b78b2967d1f"
+checksum = "60f8d39ff81ce13c00cac546314f0af54c14f0d914e54a232501733d062f6b9f"
 dependencies = [
  "memmap2",
 ]

@@ -10,6 +10,7 @@ description = "Indexed data file. It uses mmap and avltiree."
 repository = "https://github.com/OdenShirataki/idx_sized"
 
 keywords = ["index","file","avltree","memmap","data"]
+categories = ["database"]
 license = "MIT/Apache-2.0"
 
 [dependencies]
