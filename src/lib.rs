@@ -5,7 +5,7 @@ use file_mmap::FileMmap;
 use avltriee::AvltrieeNode;
 pub use avltriee::{
     Avltriee
-    ,RemoveResult
+    ,Removed
 };
 
 pub type RowSet = BTreeSet<u32>;
@@ -54,7 +54,7 @@ impl<T: std::default::Default + Copy> IdxSized<T>{
     pub fn update(&mut self,row:u32,value:T) where T:std::cmp::Ord{
         self.triee.update(row,value);
     }
-    pub fn delete(&mut self,row:u32)->RemoveResult<T>{
+    pub fn delete(&mut self,row:u32)->Removed<T>{
         self.triee.remove(row)
     }
     pub fn resize_to(&mut self,record_count:u32)->Result<u32,std::io::Error>{
