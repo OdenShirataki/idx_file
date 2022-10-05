@@ -19,7 +19,7 @@ dependencies = [
 
 [[package]]
 name = "idx_sized"
-version = "0.11.1"
+version = "0.11.2"
 dependencies = [
  "avltriee",
  "file_mmap",

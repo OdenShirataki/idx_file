@@ -1,4 +1,4 @@
-use std::mem;
+use std::mem::size_of;
 use std::cmp::Ordering;
 use std::collections::BTreeSet;
 use file_mmap::FileMmap;
@@ -15,7 +15,7 @@ pub struct IdxSized<T>{
     ,triee:Avltriee<T>
 }
 
-const INIT_SIZE: usize=mem::size_of::<usize>();
+const INIT_SIZE: usize=size_of::<usize>();
 impl<T: std::default::Default + Copy> IdxSized<T>{
     pub fn new(path:&str) -> Result<IdxSized<T>,std::io::Error>{
         let filemmap=FileMmap::new(path,INIT_SIZE as u64)?;
@@ -59,7 +59,7 @@ impl<T: std::default::Default + Copy> IdxSized<T>{
     }
     pub fn resize_to(&mut self,record_count:u32)->Result<u32,std::io::Error>{
         let size=INIT_SIZE
-            +mem::size_of::<AvltrieeNode<T>>()*(1+record_count as usize)
+            +size_of::<AvltrieeNode<T>>()*(1+record_count as usize)
         ;
         if self.mmap.len()<size as u64{
             self.mmap.set_len(size as u64)?;
@@ -67,9 +67,7 @@ impl<T: std::default::Default + Copy> IdxSized<T>{
         Ok(record_count)
     }
     pub fn max_rows(&self)->u32{
-        let len=self.mmap.len();
-        
-        ((len-INIT_SIZE as u64)/mem::size_of::<AvltrieeNode<T>>() as u64) as u32
+        ((self.mmap.len() as usize - INIT_SIZE)/size_of::<AvltrieeNode<T>>()) as u32
     }
     fn resize(&mut self,insert_row:u32)->Result<u32,std::io::Error>{
         let new_record_count=self.max_rows();
@@ -79,7 +77,7 @@ impl<T: std::default::Default + Copy> IdxSized<T>{
             new_record_count
         };
         let size=INIT_SIZE
-            +mem::size_of::<AvltrieeNode<T>>()*(1+sizing_count as usize)
+            +size_of::<AvltrieeNode<T>>()*(1+sizing_count as usize)
         ;
         if (self.mmap.len() as usize)<size{
             self.mmap.set_len(size as u64)?;
@@ -90,7 +88,7 @@ impl<T: std::default::Default + Copy> IdxSized<T>{
     pub fn init(&mut self,data:T,root:u32)->Option<u32>{
         if let Err(_)=self.mmap.set_len((
             INIT_SIZE
-            +mem::size_of::<AvltrieeNode<T>>()*(root as usize+1)
+            +size_of::<AvltrieeNode<T>>()*(root as usize+1)
         ) as u64){
             None
         }else{
