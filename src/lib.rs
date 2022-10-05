@@ -15,10 +15,10 @@ pub struct IdxSized<T>{
     ,triee:Avltriee<T>
 }
 
-const INIT_SIZE: u64=mem::size_of::<usize>() as u64;
+const INIT_SIZE: usize=mem::size_of::<usize>();
 impl<T: std::default::Default + Copy> IdxSized<T>{
     pub fn new(path:&str) -> Result<IdxSized<T>,std::io::Error>{
-        let filemmap=FileMmap::new(path,INIT_SIZE)?;
+        let filemmap=FileMmap::new(path,INIT_SIZE as u64)?;
         let ep=filemmap.offset(INIT_SIZE as isize) as *mut AvltrieeNode<T>;
         let p=filemmap.as_ptr() as *mut u32;
         Ok(IdxSized{
@@ -58,7 +58,7 @@ impl<T: std::default::Default + Copy> IdxSized<T>{
         self.triee.remove(row)
     }
     pub fn resize_to(&mut self,record_count:u32)->Result<u32,std::io::Error>{
-        let size=mem::size_of::<usize>()
+        let size=INIT_SIZE
             +mem::size_of::<AvltrieeNode<T>>()*(1+record_count as usize)
         ;
         if self.mmap.len()<size as u64{
@@ -69,7 +69,7 @@ impl<T: std::default::Default + Copy> IdxSized<T>{
     pub fn max_rows(&self)->u32{
         let len=self.mmap.len();
         
-        ((len-INIT_SIZE)/mem::size_of::<AvltrieeNode<T>>() as u64) as u32
+        ((len-INIT_SIZE as u64)/mem::size_of::<AvltrieeNode<T>>() as u64) as u32
     }
     fn resize(&mut self,insert_row:u32)->Result<u32,std::io::Error>{
         let new_record_count=self.max_rows();
@@ -78,7 +78,7 @@ impl<T: std::default::Default + Copy> IdxSized<T>{
         }else{
             new_record_count
         };
-        let size=mem::size_of::<usize>()
+        let size=INIT_SIZE
             +mem::size_of::<AvltrieeNode<T>>()*(1+sizing_count as usize)
         ;
         if (self.mmap.len() as usize)<size{
@@ -89,7 +89,7 @@ impl<T: std::default::Default + Copy> IdxSized<T>{
     }
     pub fn init(&mut self,data:T,root:u32)->Option<u32>{
         if let Err(_)=self.mmap.set_len((
-            mem::size_of::<usize>()
+            INIT_SIZE
             +mem::size_of::<AvltrieeNode<T>>()*(root as usize+1)
         ) as u64){
             None
