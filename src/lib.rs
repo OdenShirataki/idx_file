@@ -139,22 +139,22 @@ impl<T: std::default::Default + Copy> IdxSized<T>{
     }
     pub fn select_by_value_from_to(&self,value_min:&T,value_max:&T)->RowSet where T:std::cmp::Ord{
         let mut result=RowSet::default();
-        for (_,i,_) in self.triee().iter_by_value_from_to(value_min,value_max){
-            result.insert(i);
+        for r in self.triee().iter_by_value_from_to(value_min,value_max){
+            result.insert(r.row());
         }
         result
     }
     pub fn select_by_value_from(&self,value_min:&T)->RowSet where T:std::cmp::Ord{
         let mut result=RowSet::default();
-        for (_,i,_) in self.triee().iter_by_value_from(value_min){
-            result.insert(i);
+        for r in self.triee().iter_by_value_from(value_min){
+            result.insert(r.row());
         }
         result
     }
     pub fn select_by_value_to(&self,value_max:&T)->RowSet where T:std::cmp::Ord{
         let mut result=RowSet::default();
-        for (_,i,_) in self.triee().iter_by_value_to(value_max){
-            result.insert(i);
+        for r in self.triee().iter_by_value_to(value_max){
+            result.insert(r.row());
         }
         result
     }
