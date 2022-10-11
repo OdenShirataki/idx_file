@@ -36,7 +36,7 @@ impl<T: std::default::Default + Copy> IdxSized<T>{
         &self.triee
     }
     pub fn value(&self,row:u32)->Option<T>{
-        self.triee.entity_value(row).map(|v|*v)
+        self.triee.value(row).map(|v|*v)
     }
     pub fn insert(&mut self,target:T)->Option<u32> where T:Default + std::cmp::Ord{
         if self.triee.root()==0{ //データがまだ無い場合は新規登録
