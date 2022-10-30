@@ -17,7 +17,7 @@ pub struct IdxSized<T>{
 
 const INIT_SIZE: usize=size_of::<usize>();
 impl<T: std::default::Default + Copy> IdxSized<T>{
-    pub fn new(path:&str) -> Result<IdxSized<T>,std::io::Error>{
+    pub fn new(path:&str) -> Result<Self,std::io::Error>{
         let filemmap=FileMmap::new(path,INIT_SIZE as u64)?;
         let ep=filemmap.offset(INIT_SIZE as isize) as *mut AvltrieeNode<T>;
         let p=filemmap.as_ptr() as *mut u32;
@@ -38,7 +38,7 @@ impl<T: std::default::Default + Copy> IdxSized<T>{
     pub fn value(&self,row:u32)->Option<T>{
         self.triee.value(row).map(|v|*v)
     }
-    pub fn insert(&mut self,target:T)->Option<u32> where T:Default + std::cmp::Ord{
+    pub fn insert(&mut self,target:T)->Result<u32,std::io::Error> where T:Default + std::cmp::Ord{
         if self.triee.root()==0{ //データがまだ無い場合は新規登録
             self.init(target,1)
         }else{
@@ -85,23 +85,20 @@ impl<T: std::default::Default + Copy> IdxSized<T>{
         
         Ok(sizing_count)
     }
-    pub fn init(&mut self,data:T,root:u32)->Option<u32>{
-        if let Err(_)=self.mmap.set_len((
+    pub fn init(&mut self,data:T,root:u32)->Result<u32,std::io::Error>{
+        self.mmap.set_len((
             INIT_SIZE
             +size_of::<AvltrieeNode<T>>()*(root as usize+1)
-        ) as u64){
-            None
-        }else{
-            self.triee.init_node(data,root);
-            Some(root)
-        }
+        ) as u64)?;
+        self.triee.init_node(data,root);
+        Ok(root)
     }
     pub fn insert_unique(&mut self
         ,data:T
         ,root: u32   //起点ノード（親ノード）
         ,ord: Ordering
         ,insert_row:u32
-    )->Option<u32> where T:Default{
+    )->Result<u32,std::io::Error> where T:Default{
         if root==0{    //初回登録
             self.init(data,if insert_row==0{
                 1
@@ -109,23 +106,15 @@ impl<T: std::default::Default + Copy> IdxSized<T>{
                 insert_row
             })
         }else{
-            match self.resize(insert_row){
-                Err(_)=>None
-                ,Ok(new_row)=>{
-                    self.triee.update_node(root,new_row,data,ord);
-                    Some(new_row)
-                 }
-             }
+            let new_row=self.resize(insert_row)?;
+            self.triee.update_node(root,new_row,data,ord);
+            Ok(new_row)
          }
     }
-    pub fn insert_same(&mut self,root:u32,insert_row:u32)->Option<u32>{
-        match self.resize(insert_row){
-            Err(_)=>None
-            ,Ok(new_row)=>{
-                self.triee.update_same(root,new_row);
-                Some(new_row)
-            }
-        }
+    pub fn insert_same(&mut self,root:u32,insert_row:u32)->Result<u32,std::io::Error>{
+        let new_row=self.resize(insert_row)?;
+        self.triee.update_same(root,new_row);
+        Ok(new_row)
     }
 
     pub fn select_by_value(&self,value:&T)->RowSet where T:std::cmp::Ord{
