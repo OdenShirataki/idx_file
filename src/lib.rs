@@ -81,7 +81,6 @@ impl<T: std::default::Default + Copy> IdxSized<T>{
         if (self.mmap.len() as usize)<size{
             self.mmap.set_len(size as u64)?;
         }
-        
         Ok(sizing_count)
     }
     pub fn init(&mut self,data:T,root:u32)->Result<u32,std::io::Error>{
