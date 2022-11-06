@@ -70,11 +70,10 @@ impl<T: std::default::Default + Copy> IdxSized<T>{
         ((self.mmap.len() as usize - INIT_SIZE)/size_of::<AvltrieeNode<T>>()) as u32
     }
     fn resize(&mut self,insert_row:u32)->Result<u32,std::io::Error>{
-        let new_record_count=self.max_rows();
         let sizing_count=if insert_row!=0{
             insert_row
         }else{
-            new_record_count
+            self.max_rows()
         };
         let size=INIT_SIZE
             +size_of::<AvltrieeNode<T>>()*(1+sizing_count as usize)
