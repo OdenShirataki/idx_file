@@ -53,11 +53,21 @@ impl<T: std::default::Default + Copy> IdxSized<T>{
             }
         }
     }
-    pub unsafe fn update(&mut self,row:u32,value:T) where T:std::cmp::Ord{
-        self.triee.update(row,value);
+    pub fn update(&mut self,row:u32,value:T)->Result<u32,std::io::Error> where T:std::cmp::Ord{
+        self.resize_to(row)?;
+        unsafe{
+            self.triee.update(row,value);
+        }
+        Ok(row)
     }
-    pub unsafe fn delete(&mut self,row:u32)->Removed<T>{
-        self.triee.remove(row)
+    pub fn delete(&mut self,row:u32)->Removed<T>{
+        if self.max_rows()>row{
+            unsafe{
+                self.triee.remove(row)
+            }
+        }else{
+            Removed::None
+        }
     }
     pub fn resize_to(&mut self,record_count:u32)->Result<u32,std::io::Error>{
         let size=INIT_SIZE
