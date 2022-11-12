@@ -19,7 +19,9 @@ const INIT_SIZE: usize=size_of::<usize>();
 impl<T: std::default::Default + Copy> IdxSized<T>{
     pub fn new(path:&str) -> Result<Self,std::io::Error>{
         let filemmap=FileMmap::new(path,INIT_SIZE as u64)?;
-        let ep=filemmap.offset(INIT_SIZE as isize) as *mut AvltrieeNode<T>;
+        let ep=unsafe{
+            filemmap.offset(INIT_SIZE as isize)
+         } as *mut AvltrieeNode<T>;
         let p=filemmap.as_ptr() as *mut u32;
         Ok(IdxSized{
             mmap:filemmap
