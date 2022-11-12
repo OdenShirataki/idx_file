@@ -37,7 +37,7 @@ impl<T: std::default::Default + Copy> IdxSized<T>{
     pub fn triee(&self)->&Avltriee<T>{
         &self.triee
     }
-    pub fn value(&self,row:u32)->Option<T>{
+    pub unsafe fn value(&self,row:u32)->Option<T>{
         self.triee.value(row).map(|v|*v)
     }
     pub fn insert(&mut self,target:T)->Result<u32,std::io::Error> where T:Default + std::cmp::Ord{
@@ -53,10 +53,10 @@ impl<T: std::default::Default + Copy> IdxSized<T>{
             }
         }
     }
-    pub fn update(&mut self,row:u32,value:T) where T:std::cmp::Ord{
+    pub unsafe fn update(&mut self,row:u32,value:T) where T:std::cmp::Ord{
         self.triee.update(row,value);
     }
-    pub fn delete(&mut self,row:u32)->Removed<T>{
+    pub unsafe fn delete(&mut self,row:u32)->Removed<T>{
         self.triee.remove(row)
     }
     pub fn resize_to(&mut self,record_count:u32)->Result<u32,std::io::Error>{
@@ -107,13 +107,17 @@ impl<T: std::default::Default + Copy> IdxSized<T>{
             })
         }else{
             let new_row=self.resize(insert_row)?;
-            self.triee.update_node(root,new_row,data,ord);
+            unsafe{
+                self.triee.update_node(root,new_row,data,ord);
+            }
             Ok(new_row)
          }
     }
     pub fn insert_same(&mut self,root:u32,insert_row:u32)->Result<u32,std::io::Error>{
         let new_row=self.resize(insert_row)?;
-        self.triee.update_same(root,new_row);
+        unsafe{
+            self.triee.update_same(root,new_row);
+        }
         Ok(new_row)
     }
 
@@ -122,7 +126,7 @@ impl<T: std::default::Default + Copy> IdxSized<T>{
         let (ord,row)=self.triee().search(value);
         if ord==Ordering::Equal{
             result.insert(row);
-            result.append(&mut self.triee().sames(row).iter().map(|&x|x).collect());
+            result.append(&mut unsafe{self.triee().sames(row)}.iter().map(|&x|x).collect());
         }
         result
     }
