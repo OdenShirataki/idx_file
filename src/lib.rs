@@ -87,19 +87,13 @@ impl<T: std::default::Default + Copy> IdxSized<T>{
     pub fn max_rows(&self)->u32{
         ((self.mmap.len() as usize - INIT_SIZE)/size_of::<AvltrieeNode<T>>()) as u32
     }
-    fn resize(&mut self,insert_row:u32)->Result<u32,std::io::Error>{
+    fn get_to_new_row(&mut self,insert_row:u32)->Result<u32,std::io::Error>{
         let sizing_count=if insert_row!=0{
             insert_row
         }else{
             self.max_rows()
         };
-        let size=INIT_SIZE
-            +size_of::<AvltrieeNode<T>>()*(1+sizing_count as usize)
-        ;
-        if (self.mmap.len() as usize)<size{
-            self.mmap.set_len(size as u64)?;
-        }
-        Ok(sizing_count)
+        self.resize_to(sizing_count)
     }
     pub fn init(&mut self,data:T,root:u32)->Result<u32,std::io::Error>{
         self.mmap.set_len((
@@ -122,7 +116,7 @@ impl<T: std::default::Default + Copy> IdxSized<T>{
                 insert_row
             })
         }else{
-            let new_row=self.resize(insert_row)?;
+            let new_row=self.get_to_new_row(insert_row)?;
             unsafe{
                 self.triee.update_node(root,new_row,data,ord);
             }
@@ -130,7 +124,7 @@ impl<T: std::default::Default + Copy> IdxSized<T>{
          }
     }
     pub fn insert_same(&mut self,root:u32,insert_row:u32)->Result<u32,std::io::Error>{
-        let new_row=self.resize(insert_row)?;
+        let new_row=self.get_to_new_row(insert_row)?;
         unsafe{
             self.triee.update_same(root,new_row);
         }
