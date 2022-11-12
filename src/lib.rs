@@ -37,8 +37,14 @@ impl<T: std::default::Default + Copy> IdxSized<T>{
     pub fn triee(&self)->&Avltriee<T>{
         &self.triee
     }
-    pub unsafe fn value(&self,row:u32)->Option<T>{
-        self.triee.value(row).map(|v|*v)
+    pub fn value(&self,row:u32)->Option<T>{
+        if self.max_rows()>row{
+            unsafe{
+                self.triee.value(row)
+            }.map(|v|*v)
+        }else{
+            None
+        }
     }
     pub fn insert(&mut self,target:T)->Result<u32,std::io::Error> where T:Default + std::cmp::Ord{
         if self.triee.root()==0{ //データがまだ無い場合は新規登録
