@@ -16,7 +16,7 @@ pub struct IdxSized<T>{
 }
 
 const INIT_SIZE: usize=size_of::<usize>();
-impl<T: std::default::Default + Copy> IdxSized<T>{
+impl<T:Clone+Default> IdxSized<T>{
     pub fn new(path:&str) -> Result<Self,std::io::Error>{
         let filemmap=FileMmap::new(path,INIT_SIZE as u64)?;
         let ep=unsafe{
@@ -41,12 +41,12 @@ impl<T: std::default::Default + Copy> IdxSized<T>{
         if self.max_rows()>row{
             unsafe{
                 self.triee.value(row)
-            }.map(|v|*v)
+            }.map(|v|v.clone())
         }else{
             None
         }
     }
-    pub fn insert(&mut self,target:T)->Result<u32,std::io::Error> where T:Default + std::cmp::Ord{
+    pub fn insert(&mut self,target:T)->Result<u32,std::io::Error> where T:Ord{
         if self.triee.root()==0{ //データがまだ無い場合は新規登録
             self.init(target,1)
         }else{
@@ -59,7 +59,7 @@ impl<T: std::default::Default + Copy> IdxSized<T>{
             }
         }
     }
-    pub fn update(&mut self,row:u32,value:T)->Result<u32,std::io::Error> where T:std::cmp::Ord{
+    pub fn update(&mut self,row:u32,value:T)->Result<u32,std::io::Error> where T:Ord{
         self.resize_to(row)?;
         unsafe{
             self.triee.update(row,value);
@@ -108,7 +108,7 @@ impl<T: std::default::Default + Copy> IdxSized<T>{
         ,root: u32   //起点ノード（親ノード）
         ,ord: Ordering
         ,insert_row:u32
-    )->Result<u32,std::io::Error> where T:Default{
+    )->Result<u32,std::io::Error>{
         if root==0{    //初回登録
             self.init(data,if insert_row==0{
                 1
@@ -131,7 +131,7 @@ impl<T: std::default::Default + Copy> IdxSized<T>{
         Ok(new_row)
     }
 
-    pub fn select_by_value(&self,value:&T)->RowSet where T:std::cmp::Ord{
+    pub fn select_by_value(&self,value:&T)->RowSet where T:Ord{
         let mut result=RowSet::default();
         let (ord,row)=self.triee().search(value);
         if ord==Ordering::Equal{
@@ -140,21 +140,21 @@ impl<T: std::default::Default + Copy> IdxSized<T>{
         }
         result
     }
-    pub fn select_by_value_from_to(&self,value_min:&T,value_max:&T)->RowSet where T:std::cmp::Ord{
+    pub fn select_by_value_from_to(&self,value_min:&T,value_max:&T)->RowSet where T:Ord{
         let mut result=RowSet::default();
         for r in self.triee().iter_by_value_from_to(value_min,value_max){
             result.insert(r.row());
         }
         result
     }
-    pub fn select_by_value_from(&self,value_min:&T)->RowSet where T:std::cmp::Ord{
+    pub fn select_by_value_from(&self,value_min:&T)->RowSet where T:Ord{
         let mut result=RowSet::default();
         for r in self.triee().iter_by_value_from(value_min){
             result.insert(r.row());
         }
         result
     }
-    pub fn select_by_value_to(&self,value_max:&T)->RowSet where T:std::cmp::Ord{
+    pub fn select_by_value_to(&self,value_max:&T)->RowSet where T:Ord{
         let mut result=RowSet::default();
         for r in self.triee().iter_by_value_to(value_max){
             result.insert(r.row());
