@@ -6,6 +6,7 @@ use avltriee::AvltrieeNode;
 pub use avltriee::{
     Avltriee
     ,Removed
+    ,AvltrieeIter
 };
 
 pub type RowSet = BTreeSet<u32>;
