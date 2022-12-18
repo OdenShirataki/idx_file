@@ -126,7 +126,7 @@ impl<T: Clone + Default> IdxSized<T> {
     {
         let mut result = RowSet::default();
         let (ord, row) = self.triee().search(value);
-        if ord == Ordering::Equal {
+        if ord == Ordering::Equal && row>0 {
             result.insert(row);
             result.append(
                 &mut unsafe { self.triee().sames(row) }
