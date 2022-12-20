@@ -13,7 +13,7 @@ pub struct IdxSized<T> {
 }
 
 const INIT_SIZE: usize = size_of::<usize>();
-impl<T: Clone + Default> IdxSized<T> {
+impl<T> IdxSized<T> {
     pub fn new(path: &str) -> Result<Self, std::io::Error> {
         let filemmap = FileMmap::new(path, INIT_SIZE as u64)?;
         let ep = unsafe { filemmap.offset(INIT_SIZE as isize) } as *mut AvltrieeNode<T>;
@@ -29,7 +29,10 @@ impl<T: Clone + Default> IdxSized<T> {
     pub fn triee(&self) -> &Avltriee<T> {
         &self.triee
     }
-    pub fn value(&self, row: u32) -> Option<T> {
+    pub fn value(&self, row: u32) -> Option<T>
+    where
+        T: Clone,
+    {
         if self.max_rows() > row {
             unsafe { self.triee.value(row) }.map(|v| v.clone())
         } else {
@@ -38,7 +41,7 @@ impl<T: Clone + Default> IdxSized<T> {
     }
     pub fn insert(&mut self, target: T) -> Result<u32, std::io::Error>
     where
-        T: Ord,
+        T: Ord + Default + Clone,
     {
         if self.triee.root() == 0 {
             //データがまだ無い場合は新規登録
@@ -55,7 +58,7 @@ impl<T: Clone + Default> IdxSized<T> {
     }
     pub fn update(&mut self, row: u32, value: T) -> Result<u32, std::io::Error>
     where
-        T: Ord,
+        T: Ord + Clone + Default,
     {
         self.resize_to(row)?;
         unsafe {
@@ -63,7 +66,10 @@ impl<T: Clone + Default> IdxSized<T> {
         }
         Ok(row)
     }
-    pub fn delete(&mut self, row: u32) -> Removed<T> {
+    pub fn delete(&mut self, row: u32) -> Removed<T>
+    where
+        T: Default + Clone,
+    {
         if self.max_rows() > row {
             unsafe { self.triee.remove(row) }
         } else {
@@ -88,7 +94,10 @@ impl<T: Clone + Default> IdxSized<T> {
         };
         self.resize_to(sizing_count)
     }
-    pub fn init(&mut self, data: T, root: u32) -> Result<u32, std::io::Error> {
+    pub fn init(&mut self, data: T, root: u32) -> Result<u32, std::io::Error>
+    where
+        T: Default + Clone,
+    {
         self.mmap
             .set_len((INIT_SIZE + size_of::<AvltrieeNode<T>>() * (root as usize + 1)) as u64)?;
         self.triee.init_node(data, root);
@@ -100,7 +109,10 @@ impl<T: Clone + Default> IdxSized<T> {
         parent: u32, //起点ノード（親ノード）
         ord: Ordering,
         insert_row: u32,
-    ) -> Result<u32, std::io::Error> {
+    ) -> Result<u32, std::io::Error>
+    where
+        T: Default + Clone,
+    {
         if parent == 0 {
             //初回登録
             self.init(data, if insert_row == 0 { 1 } else { insert_row })
@@ -112,7 +124,10 @@ impl<T: Clone + Default> IdxSized<T> {
             Ok(new_row)
         }
     }
-    pub fn insert_same(&mut self, parent: u32, insert_row: u32) -> Result<u32, std::io::Error> {
+    pub fn insert_same(&mut self, parent: u32, insert_row: u32) -> Result<u32, std::io::Error>
+    where
+        T: Clone,
+    {
         let new_row = self.get_to_new_row(insert_row)?;
         unsafe {
             self.triee.update_same(parent, new_row);
@@ -126,7 +141,7 @@ impl<T: Clone + Default> IdxSized<T> {
     {
         let mut result = RowSet::default();
         let (ord, row) = self.triee().search(value);
-        if ord == Ordering::Equal && row>0 {
+        if ord == Ordering::Equal && row > 0 {
             result.insert(row);
             result.append(
                 &mut unsafe { self.triee().sames(row) }
