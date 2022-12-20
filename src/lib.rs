@@ -41,7 +41,7 @@ impl<T> IdxSized<T> {
     }
     pub fn insert(&mut self, target: T) -> Result<u32, std::io::Error>
     where
-        T: Ord + Default + Clone,
+        T: Default + Clone + Ord,
     {
         if self.triee.root() == 0 {
             //データがまだ無い場合は新規登録
@@ -96,7 +96,7 @@ impl<T> IdxSized<T> {
     }
     pub fn init(&mut self, data: T, root: u32) -> Result<u32, std::io::Error>
     where
-        T: Default + Clone,
+        T: Default,
     {
         self.mmap
             .set_len((INIT_SIZE + size_of::<AvltrieeNode<T>>() * (root as usize + 1)) as u64)?;
@@ -111,7 +111,7 @@ impl<T> IdxSized<T> {
         insert_row: u32,
     ) -> Result<u32, std::io::Error>
     where
-        T: Default + Clone,
+        T: Default
     {
         if parent == 0 {
             //初回登録
