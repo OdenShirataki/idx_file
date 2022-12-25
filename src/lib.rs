@@ -111,7 +111,7 @@ impl<T> IdxSized<T> {
         insert_row: u32,
     ) -> Result<u32, std::io::Error>
     where
-        T: Default
+        T: Default,
     {
         if parent == 0 {
             //初回登録
