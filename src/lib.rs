@@ -1,9 +1,7 @@
 use avltriee::AvltrieeNode;
 pub use avltriee::{Avltriee, AvltrieeIter, Removed};
 use file_mmap::FileMmap;
-use std::cmp::Ordering;
-use std::collections::BTreeSet;
-use std::mem::size_of;
+use std::{cmp::Ordering, collections::BTreeSet, io, mem::size_of};
 
 pub type RowSet = BTreeSet<u32>;
 
@@ -14,8 +12,11 @@ pub struct IdxSized<T> {
 
 const INIT_SIZE: usize = size_of::<usize>();
 impl<T> IdxSized<T> {
-    pub fn new(path: &str) -> Result<Self, std::io::Error> {
-        let filemmap = FileMmap::new(path, INIT_SIZE as u64)?;
+    pub fn new(path: &str) -> io::Result<Self> {
+        let mut filemmap = FileMmap::new(path)?;
+        if filemmap.len()? == 0 {
+            filemmap.set_len(INIT_SIZE as u64)?;
+        }
         let ep = unsafe { filemmap.offset(INIT_SIZE as isize) } as *mut AvltrieeNode<T>;
         let p = filemmap.as_ptr() as *mut u32;
         Ok(IdxSized {
@@ -33,13 +34,14 @@ impl<T> IdxSized<T> {
     where
         T: Clone,
     {
-        if self.max_rows() > row {
-            unsafe { self.triee.value(row) }.map(|v| v.clone())
-        } else {
-            None
+        if let Ok(max_rows) = self.max_rows() {
+            if max_rows > row {
+                return unsafe { self.triee.value(row) }.map(|v| v.clone());
+            }
         }
+        None
     }
-    pub fn insert(&mut self, target: T) -> Result<u32, std::io::Error>
+    pub fn insert(&mut self, target: T) -> io::Result<u32>
     where
         T: Default + Clone + Ord,
     {
@@ -56,7 +58,7 @@ impl<T> IdxSized<T> {
             }
         }
     }
-    pub fn update(&mut self, row: u32, value: T) -> Result<u32, std::io::Error>
+    pub fn update(&mut self, row: u32, value: T) -> io::Result<u32>
     where
         T: Ord + Clone + Default,
     {
@@ -70,31 +72,33 @@ impl<T> IdxSized<T> {
     where
         T: Default + Clone,
     {
-        if self.max_rows() > row {
-            unsafe { self.triee.remove(row) }
-        } else {
-            Removed::None
+        if let Ok(max_rows) = self.max_rows() {
+            if max_rows > row {
+                return unsafe { self.triee.remove(row) };
+            }
         }
+        Removed::None
     }
-    pub fn resize_to(&mut self, record_count: u32) -> Result<u32, std::io::Error> {
+    pub fn resize_to(&mut self, record_count: u32) -> io::Result<u32> {
         let size = INIT_SIZE + size_of::<AvltrieeNode<T>>() * (1 + record_count as usize);
-        if self.mmap.len() < size as u64 {
+        if self.mmap.len()? < size as u64 {
             self.mmap.set_len(size as u64)?;
         }
         Ok(record_count)
     }
-    pub fn max_rows(&self) -> u32 {
-        ((self.mmap.len() as usize - INIT_SIZE) / size_of::<AvltrieeNode<T>>()) as u32
+    pub fn max_rows(&self) -> io::Result<u32> {
+        let len = self.mmap.len()?;
+        Ok(((len as usize - INIT_SIZE) / size_of::<AvltrieeNode<T>>()) as u32)
     }
-    fn get_to_new_row(&mut self, insert_row: u32) -> Result<u32, std::io::Error> {
+    fn get_to_new_row(&mut self, insert_row: u32) -> io::Result<u32> {
         let sizing_count = if insert_row != 0 {
             insert_row
         } else {
-            self.max_rows()
+            self.max_rows()?
         };
         self.resize_to(sizing_count)
     }
-    pub fn init(&mut self, data: T, root: u32) -> Result<u32, std::io::Error>
+    pub fn init(&mut self, data: T, root: u32) -> io::Result<u32>
     where
         T: Default,
     {
@@ -109,7 +113,7 @@ impl<T> IdxSized<T> {
         parent: u32, //起点ノード（親ノード）
         ord: Ordering,
         insert_row: u32,
-    ) -> Result<u32, std::io::Error>
+    ) -> io::Result<u32>
     where
         T: Default,
     {
@@ -124,7 +128,7 @@ impl<T> IdxSized<T> {
             Ok(new_row)
         }
     }
-    pub fn insert_same(&mut self, parent: u32, insert_row: u32) -> Result<u32, std::io::Error>
+    pub fn insert_same(&mut self, parent: u32, insert_row: u32) -> io::Result<u32>
     where
         T: Clone,
     {
