@@ -1,7 +1,7 @@
 use avltriee::AvltrieeNode;
 pub use avltriee::{Avltriee, AvltrieeIter, Removed};
 use file_mmap::FileMmap;
-use std::{cmp::Ordering, collections::BTreeSet, io, mem::size_of};
+use std::{cmp::Ordering, collections::BTreeSet, io, mem::size_of, path::Path};
 
 pub type RowSet = BTreeSet<u32>;
 
@@ -12,7 +12,7 @@ pub struct IdxSized<T> {
 
 const INIT_SIZE: u64 = size_of::<usize>() as u64;
 impl<T> IdxSized<T> {
-    pub fn new(path: &str) -> io::Result<Self> {
+    pub fn new<P: AsRef<Path>>(path: P) -> io::Result<Self> {
         let mut filemmap = FileMmap::new(path)?;
         if filemmap.len()? == 0 {
             filemmap.set_len(INIT_SIZE)?;
