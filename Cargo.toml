@@ -1,6 +1,6 @@
 [package]
 name = "idx_sized"
-version = "0.21.3"
+version = "0.21.4"
 edition = "2021"
 
 authors = ["Oden Shirataki <oden.srtk@gmail.com>"]
@@ -15,4 +15,4 @@ license = "MIT/Apache-2.0"
 
 [dependencies]
 avltriee = { version = "0.30" , path = "../avltriee" }
-file_mmap = { version = "0.13" , path = "../file_mmap" }
+file_mmap = { version = "0.14" , path = "../file_mmap" }
