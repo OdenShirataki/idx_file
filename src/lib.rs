@@ -83,6 +83,10 @@ impl<T> IdxSized<T> {
         let size = INIT_SIZE + size_of::<AvltrieeNode<T>>() as u64 * (1 + record_count as u64);
         if self.mmap.len()? < size {
             self.mmap.set_len(size)?;
+            self.triee = Avltriee::new(self.mmap.as_ptr() as *mut u32, unsafe {
+                self.mmap.offset(INIT_SIZE as isize)
+            }
+                as *mut AvltrieeNode<T>);
         }
         Ok(record_count)
     }
@@ -102,8 +106,7 @@ impl<T> IdxSized<T> {
     where
         T: Default,
     {
-        self.mmap
-            .set_len(INIT_SIZE + size_of::<AvltrieeNode<T>>() as u64 * (root + 1) as u64)?;
+        self.resize_to(root)?;
         self.triee.init_node(data, root);
         Ok(root)
     }
