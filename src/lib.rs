@@ -35,7 +35,7 @@ impl<T> IdxSized<T> {
         T: Clone,
     {
         if let Ok(max_rows) = self.max_rows() {
-            if max_rows > row {
+            if row <= max_rows {
                 return unsafe { self.triee.value(row) }.map(|v| v.clone());
             }
         }
@@ -62,7 +62,7 @@ impl<T> IdxSized<T> {
     where
         T: Ord + Clone + Default,
     {
-        self.resize_to(row)?;
+        self.expand_to(row)?;
         unsafe {
             self.triee.update(row, value);
         }
@@ -73,40 +73,38 @@ impl<T> IdxSized<T> {
         T: Default + Clone,
     {
         if let Ok(max_rows) = self.max_rows() {
-            if max_rows > row {
+            if row <= max_rows {
                 return unsafe { self.triee.remove(row) };
             }
         }
         Removed::None
     }
-    pub fn resize_to(&mut self, record_count: u32) -> io::Result<u32> {
-        let size = INIT_SIZE + size_of::<AvltrieeNode<T>>() as u64 * (1 + record_count as u64);
+    fn expand_to(&mut self, record_count: u32) -> io::Result<u32> {
+        let size = INIT_SIZE + size_of::<AvltrieeNode<T>>() as u64 * record_count as u64;
         if self.mmap.len()? < size {
             self.mmap.set_len(size)?;
             self.triee = Avltriee::new(self.mmap.as_ptr() as *mut u32, unsafe {
-                self.mmap.offset(INIT_SIZE as isize)
-            }
-                as *mut AvltrieeNode<T>);
+                self.mmap.offset(INIT_SIZE as isize) as *mut AvltrieeNode<T>
+            });
         }
         Ok(record_count)
     }
     pub fn max_rows(&self) -> io::Result<u32> {
-        let len = self.mmap.len()?;
-        Ok(((len - INIT_SIZE) / size_of::<AvltrieeNode<T>>() as u64) as u32)
+        Ok(((self.mmap.len()? - INIT_SIZE) / size_of::<AvltrieeNode<T>>() as u64) as u32)
     }
-    fn get_to_new_row(&mut self, insert_row: u32) -> io::Result<u32> {
+    fn new_row(&mut self, insert_row: u32) -> io::Result<u32> {
         let sizing_count = if insert_row != 0 {
             insert_row
         } else {
-            self.max_rows()?
+            self.max_rows()? + 1
         };
-        self.resize_to(sizing_count)
+        self.expand_to(sizing_count)
     }
     pub fn init(&mut self, data: T, root: u32) -> io::Result<u32>
     where
         T: Default,
     {
-        self.resize_to(root)?;
+        self.expand_to(root)?;
         self.triee.init_node(data, root);
         Ok(root)
     }
@@ -124,7 +122,7 @@ impl<T> IdxSized<T> {
             //初回登録
             self.init(data, if insert_row == 0 { 1 } else { insert_row })
         } else {
-            let new_row = self.get_to_new_row(insert_row)?;
+            let new_row = self.new_row(insert_row)?;
             unsafe {
                 self.triee.update_node(parent, new_row, data, ord);
             }
@@ -135,7 +133,7 @@ impl<T> IdxSized<T> {
     where
         T: Clone,
     {
-        let new_row = self.get_to_new_row(insert_row)?;
+        let new_row = self.new_row(insert_row)?;
         unsafe {
             self.triee.update_same(parent, new_row);
         }
