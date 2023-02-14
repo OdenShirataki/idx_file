@@ -10,14 +10,15 @@ pub struct IdxSized<T> {
     triee: Avltriee<T>,
 }
 
-const INIT_SIZE: u64 = size_of::<usize>() as u64;
+const ROOT_SIZE: u64 = size_of::<usize>() as u64;
 impl<T> IdxSized<T> {
+    const UNIT_SIZE: u64 = size_of::<AvltrieeNode<T>>() as u64;
     pub fn new<P: AsRef<Path>>(path: P) -> io::Result<Self> {
         let mut filemmap = FileMmap::new(path)?;
         if filemmap.len()? == 0 {
-            filemmap.set_len(INIT_SIZE)?;
+            filemmap.set_len(ROOT_SIZE + Self::UNIT_SIZE)?;
         }
-        let ep = unsafe { filemmap.offset(INIT_SIZE as isize) } as *mut AvltrieeNode<T>;
+        let ep = unsafe { filemmap.offset(ROOT_SIZE as isize) } as *mut AvltrieeNode<T>;
         let p = filemmap.as_ptr() as *mut u32;
         Ok(IdxSized {
             mmap: filemmap,
@@ -80,17 +81,17 @@ impl<T> IdxSized<T> {
         Removed::None
     }
     fn expand_to(&mut self, record_count: u32) -> io::Result<u32> {
-        let size = INIT_SIZE + size_of::<AvltrieeNode<T>>() as u64 * record_count as u64;
+        let size = ROOT_SIZE + Self::UNIT_SIZE * (record_count + 1) as u64;
         if self.mmap.len()? < size {
             self.mmap.set_len(size)?;
             self.triee = Avltriee::new(self.mmap.as_ptr() as *mut u32, unsafe {
-                self.mmap.offset(INIT_SIZE as isize) as *mut AvltrieeNode<T>
+                self.mmap.offset(ROOT_SIZE as isize) as *mut AvltrieeNode<T>
             });
         }
         Ok(record_count)
     }
     pub fn max_rows(&self) -> io::Result<u32> {
-        Ok(((self.mmap.len()? - INIT_SIZE) / size_of::<AvltrieeNode<T>>() as u64) as u32)
+        Ok(((self.mmap.len()? - ROOT_SIZE) / Self::UNIT_SIZE) as u32 - 1)
     }
     fn new_row(&mut self, insert_row: u32) -> io::Result<u32> {
         let sizing_count = if insert_row != 0 {
