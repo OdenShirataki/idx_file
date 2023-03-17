@@ -47,7 +47,6 @@ impl<T> IdxSized<T> {
         T: Default + Clone + Ord,
     {
         if self.triee.root() == 0 {
-            //データがまだ無い場合は新規登録
             self.init(target, 1)
         } else {
             let (ord, found_row) = self.triee.search(&target);
@@ -75,7 +74,13 @@ impl<T> IdxSized<T> {
     {
         if let Ok(max_rows) = self.max_rows() {
             if row <= max_rows {
-                return unsafe { self.triee.remove(row) };
+                let ret = unsafe { self.triee.remove(row) };
+                if row == max_rows {
+                    self.mmap
+                        .set_len(ROOT_SIZE + Self::UNIT_SIZE * row as u64)
+                        .unwrap();
+                }
+                return ret;
             }
         }
         Removed::None
