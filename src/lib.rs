@@ -79,6 +79,9 @@ impl<T> IdxSized<T> {
                     let mut current = row;
                     while let None = self.value(current - 1) {
                         current -= 1;
+                        if current == 0 {
+                            break;
+                        }
                     }
                     self.mmap
                         .set_len(ROOT_SIZE + Self::UNIT_SIZE * current as u64)
