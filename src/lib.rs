@@ -76,15 +76,17 @@ impl<T> IdxSized<T> {
             if row <= max_rows {
                 let ret = unsafe { self.triee.remove(row) };
                 if row == max_rows {
-                    let mut current = row;
-                    while let None = self.value(current - 1) {
-                        current -= 1;
-                        if current == 0 {
-                            break;
+                    let mut current = row - 1;
+                    if current >= 1 {
+                        while let None = self.value(current) {
+                            current -= 1;
+                            if current == 0 {
+                                break;
+                            }
                         }
                     }
                     self.mmap
-                        .set_len(ROOT_SIZE + Self::UNIT_SIZE * current as u64)
+                        .set_len(ROOT_SIZE + Self::UNIT_SIZE * (current + 1) as u64)
                         .unwrap();
                 }
                 return ret;
