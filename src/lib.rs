@@ -10,19 +10,17 @@ pub struct IdxSized<T> {
     triee: Avltriee<T>,
 }
 
-const ROOT_SIZE: u64 = size_of::<usize>() as u64;
 impl<T> IdxSized<T> {
     const UNIT_SIZE: u64 = size_of::<AvltrieeNode<T>>() as u64;
     pub fn new<P: AsRef<Path>>(path: P) -> io::Result<Self> {
         let mut filemmap = FileMmap::new(path)?;
         if filemmap.len()? == 0 {
-            filemmap.set_len(ROOT_SIZE + Self::UNIT_SIZE)?;
+            filemmap.set_len(Self::UNIT_SIZE)?;
         }
-        let ep = unsafe { filemmap.offset(ROOT_SIZE as isize) } as *mut AvltrieeNode<T>;
-        let p = filemmap.as_ptr() as *mut u32;
+        let p = filemmap.as_ptr() as *mut AvltrieeNode<T>;
         Ok(IdxSized {
             mmap: filemmap,
-            triee: Avltriee::new(p, ep),
+            triee: Avltriee::new(p),
         })
     }
     pub fn triee_mut(&mut self) -> &mut Avltriee<T> {
@@ -68,7 +66,7 @@ impl<T> IdxSized<T> {
         }
         Ok(row)
     }
-    pub fn delete(&mut self, row: u32) -> Removed<T>
+    pub fn delete(&mut self, row: u32) -> io::Result<Removed<T>>
     where
         T: Default + Clone,
     {
@@ -85,27 +83,23 @@ impl<T> IdxSized<T> {
                             }
                         }
                     }
-                    self.mmap
-                        .set_len(ROOT_SIZE + Self::UNIT_SIZE * (current + 1) as u64)
-                        .unwrap();
+                    self.mmap.set_len(Self::UNIT_SIZE * (current + 1) as u64)?;
                 }
-                return ret;
+                return Ok(ret);
             }
         }
-        Removed::None
+        Ok(Removed::None)
     }
     fn expand_to(&mut self, record_count: u32) -> io::Result<u32> {
-        let size = ROOT_SIZE + Self::UNIT_SIZE * (record_count + 1) as u64;
+        let size = Self::UNIT_SIZE * (record_count + 1) as u64;
         if self.mmap.len()? < size {
             self.mmap.set_len(size)?;
-            self.triee = Avltriee::new(self.mmap.as_ptr() as *mut u32, unsafe {
-                self.mmap.offset(ROOT_SIZE as isize) as *mut AvltrieeNode<T>
-            });
+            self.triee = Avltriee::new(self.mmap.as_ptr() as *mut AvltrieeNode<T>);
         }
         Ok(record_count)
     }
     pub fn max_rows(&self) -> io::Result<u32> {
-        Ok(((self.mmap.len()? - ROOT_SIZE) / Self::UNIT_SIZE) as u32 - 1)
+        Ok((self.mmap.len()? / Self::UNIT_SIZE) as u32 - 1)
     }
     fn new_row(&mut self, insert_row: u32) -> io::Result<u32> {
         let sizing_count = if insert_row != 0 {
@@ -126,7 +120,7 @@ impl<T> IdxSized<T> {
     pub fn insert_unique(
         &mut self,
         data: T,
-        parent: u32, //起点ノード（親ノード）
+        parent: u32,
         ord: Ordering,
         insert_row: u32,
     ) -> io::Result<u32>
@@ -134,7 +128,6 @@ impl<T> IdxSized<T> {
         T: Default,
     {
         if parent == 0 {
-            //初回登録
             self.init(data, if insert_row == 0 { 1 } else { insert_row })
         } else {
             let new_row = self.new_row(insert_row)?;
