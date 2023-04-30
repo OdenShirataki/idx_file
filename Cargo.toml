@@ -15,5 +15,5 @@ license = "MIT/Apache-2.0"
 
 [dependencies]
 anyhow = "1.0"
-avltriee = { version = "0.36" , path = "../avltriee" }
+avltriee = { version = "0.37" , path = "../avltriee" }
 file_mmap = { version = "0.15" , path = "../file_mmap" }
