@@ -35,8 +35,6 @@ impl<T> IdxSized<T> {
         &self.triee
     }
     pub fn value(&self, row: u32) -> Option<&T>
-    where
-        T: Clone,
     {
         if let Ok(max_rows) = self.max_rows() {
             if row <= max_rows {
