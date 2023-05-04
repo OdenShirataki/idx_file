@@ -20,22 +20,22 @@ pub struct IdxSized<T> {
 }
 impl<T> IdxSized<T> {
     const UNIT_SIZE: u64 = size_of::<AvltrieeNode<T>>() as u64;
+
     pub fn new<P: AsRef<Path>>(path: P) -> io::Result<Self> {
         let mut filemmap = FileMmap::new(path)?;
         if filemmap.len()? == 0 {
             filemmap.set_len(Self::UNIT_SIZE)?;
         }
-        let p = filemmap.as_ptr() as *mut AvltrieeNode<T>;
+        let triee = Avltriee::new(filemmap.as_ptr() as *mut AvltrieeNode<T>);
         Ok(IdxSized {
             mmap: filemmap,
-            triee: Avltriee::new(p),
+            triee,
         })
     }
     pub fn triee(&self) -> &Avltriee<T> {
         &self.triee
     }
-    pub fn value(&self, row: u32) -> Option<&T>
-    {
+    pub fn value(&self, row: u32) -> Option<&T> {
         if let Ok(max_rows) = self.max_rows() {
             if row <= max_rows {
                 return unsafe { self.triee.value(row) };
@@ -126,7 +126,7 @@ impl<T> IdxSized<T> {
                             }
                         }
                     }
-                    self.mmap.set_len(Self::UNIT_SIZE * (current + 1) as u64)?;
+                    self.resize_to(Self::UNIT_SIZE * (current + 1) as u64)?;
                 }
                 return Ok(ret);
             }
@@ -177,10 +177,15 @@ impl<T> IdxSized<T> {
     fn expand_to(&mut self, record_count: u32) -> io::Result<u32> {
         let size = Self::UNIT_SIZE * (record_count + 1) as u64;
         if self.mmap.len()? < size {
-            self.mmap.set_len(size)?;
-            self.triee = Avltriee::new(self.mmap.as_ptr() as *mut AvltrieeNode<T>);
+            self.resize_to(size)?;
         }
         Ok(record_count)
+    }
+
+    fn resize_to(&mut self, size: u64) -> io::Result<()> {
+        self.mmap.set_len(size)?;
+        self.triee = Avltriee::new(self.mmap.as_ptr() as *mut AvltrieeNode<T>);
+        Ok(())
     }
 
     fn max_rows(&self) -> io::Result<u32> {
