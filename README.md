@@ -41,7 +41,7 @@ for i in idx.triee().iter() {
     println!("{}. {} : {}", i.index(), i.row(), i.value());
 }
 
-for row in idx.triee().iter_by_value(&100) {
+for row in idx.triee().iter_by(|v|v.cmp(&100)) {
     println!("{}. {} : {}", row.index(),row.row(), row.value());
 }
 for row in idx.triee().iter_by_value_from(&100) {

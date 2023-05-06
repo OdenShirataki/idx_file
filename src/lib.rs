@@ -51,7 +51,7 @@ impl<T> IdxSized<T> {
         if self.triee.root() == 0 {
             self.init(1, value)
         } else {
-            let found = self.triee.search(&value);
+            let found = self.triee.search(|v| v.cmp(&value));
             if found.ord() == Ordering::Equal {
                 self.insert_same(found.row())
             } else {
@@ -197,34 +197,3 @@ impl<T> IdxSized<T> {
         Ok(root)
     }
 }
-
-/*
-fn example() {
-    let mut idx = IdxSized::<i64>::new("example.idx").unwrap();
-    idx.insert(100).unwrap();
-    idx.insert(300).unwrap();
-    idx.insert(100).unwrap();
-    idx.insert(150).unwrap();
-
-    idx.update(2, 50).unwrap();
-
-    idx.delete(1).unwrap();
-
-    for i in idx.triee().iter() {
-        println!("{}. {} : {}", i.index(), i.row(), i.value());
-    }
-
-    for row in idx.triee().iter_by_value(&100) {
-        println!("{}. {} : {}", row.index(),row.row(), row.value());
-    }
-    for row in idx.triee().iter_by_value_from(&100) {
-        println!("{}. {} : {}", row.index(),row.row(), row.value());
-    }
-    for row in idx.triee().iter_by_value_to(&200) {
-        println!("{}. {} : {}", row.index(),row.row(), row.value());
-    }
-    for row in idx.triee().iter_by_value_from_to(&100, &200) {
-        println!("{}. {} : {}", row.index(),row.row(), row.value());
-    }
-}
-*/
