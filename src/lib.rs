@@ -4,15 +4,8 @@ pub use anyhow;
 use anyhow::Result;
 
 use avltriee::AvltrieeNode;
-use avltriee::Removed as AvltrieeRemoved;
 pub use avltriee::{Avltriee, AvltrieeIter, Found};
 use file_mmap::FileMmap;
-
-pub enum Removed<T> {
-    Last(T),
-    Remain,
-    None,
-}
 
 pub struct IdxSized<T> {
     mmap: FileMmap,
@@ -46,7 +39,7 @@ impl<T> IdxSized<T> {
 
     pub fn insert(&mut self, value: T) -> io::Result<u32>
     where
-        T: Clone + Ord,
+        T: Ord,
     {
         if self.triee.root() == 0 {
             self.init(1, value)
@@ -59,10 +52,7 @@ impl<T> IdxSized<T> {
             }
         }
     }
-    pub fn insert_same(&mut self, row: u32) -> io::Result<u32>
-    where
-        T: Clone,
-    {
+    pub fn insert_same(&mut self, row: u32) -> io::Result<u32> {
         self.update_same(0, row)
     }
     pub fn insert_unique(&mut self, value: T, found: Found) -> io::Result<u32> {
@@ -71,7 +61,7 @@ impl<T> IdxSized<T> {
 
     pub fn update(&mut self, row: u32, value: T) -> io::Result<u32>
     where
-        T: Ord + Clone,
+        T: Ord,
     {
         self.expand_to(row)?;
         unsafe {
@@ -82,7 +72,6 @@ impl<T> IdxSized<T> {
     pub fn update_manually<V>(&mut self, row: u32, mut make_value: V, found: Found) -> Result<u32>
     where
         V: FnMut() -> Result<T>,
-        T: Clone,
     {
         let found_ord = found.ord();
         let found_row = found.row();
@@ -101,21 +90,10 @@ impl<T> IdxSized<T> {
         }
     }
 
-    pub fn delete(&mut self, row: u32) -> io::Result<Removed<T>>
-    where
-        T: Clone,
-    {
+    pub fn delete(&mut self, row: u32) -> io::Result<()> {
         if let Ok(max_rows) = self.max_rows() {
             if row <= max_rows {
-                let ret = {
-                    match unsafe { self.triee.remove(row) } {
-                        AvltrieeRemoved::Last => {
-                            Removed::Last(unsafe { self.triee.value_unchecked(row) }.clone())
-                        }
-                        AvltrieeRemoved::Remain => Removed::Remain,
-                        AvltrieeRemoved::None => Removed::None,
-                    }
-                };
+                unsafe { self.triee.delete(row) };
                 if row == max_rows {
                     let mut current = row - 1;
                     if current >= 1 {
@@ -128,10 +106,9 @@ impl<T> IdxSized<T> {
                     }
                     self.resize_to(Self::UNIT_SIZE * (current + 1) as u64)?;
                 }
-                return Ok(ret);
             }
         }
-        Ok(Removed::None)
+        Ok(())
     }
 
     pub fn exists(&self, row: u32) -> bool {
@@ -158,10 +135,7 @@ impl<T> IdxSized<T> {
             Ok(new_row)
         }
     }
-    fn update_same(&mut self, row: u32, parent: u32) -> io::Result<u32>
-    where
-        T: Clone,
-    {
+    fn update_same(&mut self, row: u32, parent: u32) -> io::Result<u32> {
         let new_row = self.new_row(row)?;
         unsafe {
             self.triee.update_same(new_row, parent);
