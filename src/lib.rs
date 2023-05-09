@@ -6,7 +6,6 @@ use anyhow::Result;
 use avltriee::AvltrieeNode;
 pub use avltriee::{Avltriee, AvltrieeIter, Found};
 use file_mmap::FileMmap;
-
 pub struct IdxSized<T> {
     mmap: FileMmap,
     triee: Avltriee<T>,
@@ -39,57 +38,45 @@ impl<T> IdxSized<T> {
 
     pub fn insert(&mut self, value: T) -> io::Result<u32>
     where
-        T: Ord,
+        T: Ord + Clone,
     {
-        if self.triee.root() == 0 {
-            self.init(1, value)
-        } else {
-            let found = self.triee.search(|v| v.cmp(&value));
-            if found.ord() == Ordering::Equal {
-                self.insert_same(found.row())
-            } else {
-                self.insert_unique(value, found)
-            }
-        }
+        self.update(0, value)
     }
-    pub fn insert_same(&mut self, row: u32) -> io::Result<u32> {
-        self.update_same(0, row)
-    }
-    pub fn insert_unique(&mut self, value: T, found: Found) -> io::Result<u32> {
-        self.update_unique(0, value, found)
-    }
-
     pub fn update(&mut self, row: u32, value: T) -> io::Result<u32>
     where
-        T: Ord,
+        T: Ord + Clone,
     {
-        self.expand_to(row)?;
+        let row = self.new_row(row)?;
         unsafe {
-            self.triee.update(row, value);
+            self.triee.update_auto(row, value);
         }
         Ok(row)
     }
-    pub fn update_manually<V>(&mut self, row: u32, mut make_value: V, found: Found) -> Result<u32>
+
+    pub fn insert_nord<V>(&mut self, make_value: V, found: Found) -> Result<u32>
     where
+        T: Clone,
         V: FnMut() -> Result<T>,
     {
+        self.update_nord(0, make_value, found)
+    }
+    pub fn update_nord<V>(&mut self, row: u32, mut make_value: V, found: Found) -> Result<u32>
+    where
+        T: Clone,
+        V: FnMut() -> Result<T>,
+    {
+        let new_row = self.new_row(row)?;
         let found_ord = found.ord();
         let found_row = found.row();
-        if found_ord == Ordering::Equal && found_row != 0 {
-            Ok(self.update_same(row, found_row)?)
-        } else {
-            let v = make_value()?;
-            if self.exists(row) {
-                unsafe {
-                    self.triee.update_unique(row, v, found);
-                }
-                Ok(row)
+        unsafe {
+            if found_ord == Ordering::Equal && found_row != 0 {
+                self.triee.update_same(new_row, found_row);
             } else {
-                Ok(self.update_unique(row, v, found)?)
+                self.triee.update_unique(new_row, make_value()?, found);
             }
         }
+        Ok(new_row)
     }
-
     pub fn delete(&mut self, row: u32) -> io::Result<()> {
         if let Ok(max_rows) = self.max_rows() {
             if row <= max_rows {
@@ -123,26 +110,6 @@ impl<T> IdxSized<T> {
         exists
     }
 
-    fn update_unique(&mut self, row: u32, value: T, found: Found) -> io::Result<u32> {
-        let parent = found.row();
-        if parent == 0 {
-            self.init(if row == 0 { 1 } else { row }, value)
-        } else {
-            let new_row = self.new_row(row)?;
-            unsafe {
-                self.triee.update_unique(new_row, value, found);
-            }
-            Ok(new_row)
-        }
-    }
-    fn update_same(&mut self, row: u32, parent: u32) -> io::Result<u32> {
-        let new_row = self.new_row(row)?;
-        unsafe {
-            self.triee.update_same(new_row, parent);
-        }
-        Ok(new_row)
-    }
-
     fn new_row(&mut self, row: u32) -> io::Result<u32> {
         let sizing_count = if row != 0 { row } else { self.max_rows()? + 1 };
         self.expand_to(sizing_count)
@@ -164,10 +131,5 @@ impl<T> IdxSized<T> {
 
     fn max_rows(&self) -> io::Result<u32> {
         Ok((self.mmap.len()? / Self::UNIT_SIZE) as u32 - 1)
-    }
-    fn init(&mut self, root: u32, data: T) -> io::Result<u32> {
-        self.expand_to(root)?;
-        self.triee.init_node(data, root);
-        Ok(root)
     }
 }
