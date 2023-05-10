@@ -1,16 +1,20 @@
-use std::{cmp::Ordering, io, mem::size_of, path::Path};
+use std::{io, mem::size_of, path::Path};
 
 pub use anyhow;
 use anyhow::Result;
 
 use avltriee::AvltrieeNode;
-pub use avltriee::{Avltriee, AvltrieeIter, Found};
+pub use avltriee::{Avltriee, AvltrieeIter, Found, UOrd};
 use file_mmap::FileMmap;
-pub struct IdxSized<T> {
+
+pub trait RefIdxFile<T> {
+    fn idx(&mut self) -> &mut IdxFile<T>;
+}
+pub struct IdxFile<T> {
     mmap: FileMmap,
     triee: Avltriee<T>,
 }
-impl<T> IdxSized<T> {
+impl<T> IdxFile<T> {
     const UNIT_SIZE: u64 = size_of::<AvltrieeNode<T>>() as u64;
 
     pub fn new<P: AsRef<Path>>(path: P) -> io::Result<Self> {
@@ -19,13 +23,16 @@ impl<T> IdxSized<T> {
             filemmap.set_len(Self::UNIT_SIZE)?;
         }
         let triee = Avltriee::new(filemmap.as_ptr() as *mut AvltrieeNode<T>);
-        Ok(IdxSized {
+        Ok(IdxFile {
             mmap: filemmap,
             triee,
         })
     }
     pub fn triee(&self) -> &Avltriee<T> {
         &self.triee
+    }
+    pub fn triee_mut(&mut self) -> &mut Avltriee<T> {
+        &mut self.triee
     }
     pub fn value(&self, row: u32) -> Option<&T> {
         if let Ok(max_rows) = self.max_rows() {
@@ -48,35 +55,38 @@ impl<T> IdxSized<T> {
     {
         let row = self.new_row(row)?;
         unsafe {
-            self.triee.update_auto(row, value);
+            self.triee.update(row, value);
         }
         Ok(row)
     }
 
-    pub fn insert_nord<V>(&mut self, make_value: V, found: Found) -> Result<u32>
-    where
-        T: Clone,
-        V: FnMut() -> Result<T>,
-    {
-        self.update_nord(0, make_value, found)
-    }
-    pub fn update_nord<V>(&mut self, row: u32, mut make_value: V, found: Found) -> Result<u32>
-    where
-        T: Clone,
-        V: FnMut() -> Result<T>,
-    {
-        let new_row = self.new_row(row)?;
-        let found_ord = found.ord();
-        let found_row = found.row();
+    pub fn insert_unique(&mut self, value: T, found: Found) -> io::Result<u32> {
+        let row = self.new_row(0)?;
         unsafe {
-            if found_ord == Ordering::Equal && found_row != 0 {
-                self.triee.update_same(new_row, found_row);
-            } else {
-                self.triee.update_unique(new_row, make_value()?, found);
-            }
+            self.triee.update_unique(row, value, found);
         }
-        Ok(new_row)
+        Ok(row)
     }
+
+    pub fn insert_uord<H, I>(holder: &mut H, input: I) -> Result<u32>
+    where
+        T: Clone,
+        H: UOrd<T, I> + RefIdxFile<T>,
+    {
+        Self::update_uord(holder, 0, input)
+    }
+    pub fn update_uord<H, I>(holder: &mut H, row: u32, input: I) -> Result<u32>
+    where
+        T: Clone,
+        H: UOrd<T, I> + RefIdxFile<T>,
+    {
+        let row = holder.idx().new_row(row)?;
+        unsafe {
+            Avltriee::update_uord(holder, row, input)?;
+        }
+        Ok(row)
+    }
+
     pub fn delete(&mut self, row: u32) -> io::Result<()> {
         if let Ok(max_rows) = self.max_rows() {
             if row <= max_rows {

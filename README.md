@@ -1,20 +1,24 @@
-# idx_sized
+# idx_file
 ## Features
 This is a library for handling single-dimensional array data. It uses mmap and avltriee.
 
-The data that can be handled is limited to fixed-length data.
-(If you're dealing with variable length data, do better with generics.)
+Basically, the data that can be handled must be fixed-length data, but we also have a trait for handling variable-length data.
 
 Array data is a balanced tree algorithm that iterates from the minimum value to the maximum value, but the inserted value is always added to the end of the file and stays in the same position all the time.
 In other words, sorting, searching, and obtaining values ​​by specifying rows can all be processed at high speed.
 Also, since I'm using mmap, when I update the value it's automatically saved to the file.
 
+
+This crate is forked from
+https://crates.io/crates/idx_sized
+
+
 ## Usage
 ### init
 ```rust
-use idx_sized::IdxSized;
+use idx_file::IdxFile;
 
-let mut idx=IdxSized::<i64>::new("hoge.idx").unwrap();
+let mut idx=IdxFile::<i64>::new("hoge.idx").unwrap();
 ```
 
 ### insert
