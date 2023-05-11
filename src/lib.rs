@@ -10,6 +10,7 @@ use file_mmap::FileMmap;
 pub struct IdxFile<T> {
     mmap: FileMmap,
     triee: Avltriee<T>,
+    max_rows: u32,
 }
 impl<T> IdxFile<T> {
     const UNIT_SIZE: u64 = size_of::<AvltrieeNode<T>>() as u64;
@@ -20,9 +21,11 @@ impl<T> IdxFile<T> {
             filemmap.set_len(Self::UNIT_SIZE)?;
         }
         let triee = Avltriee::new(filemmap.as_ptr() as *mut AvltrieeNode<T>);
+        let max_rows = Self::calc_max_rows(filemmap.len()?);
         Ok(IdxFile {
             mmap: filemmap,
             triee,
+            max_rows,
         })
     }
     pub fn triee(&self) -> &Avltriee<T> {
@@ -32,18 +35,15 @@ impl<T> IdxFile<T> {
         &mut self.triee
     }
     pub fn value(&self, row: u32) -> Option<&T> {
-        if let Ok(max_rows) = self.max_rows() {
-            if row <= max_rows {
-                return unsafe { self.triee.value(row) };
-            }
+        if row <= self.max_rows {
+            unsafe { self.triee.value(row) }
+        } else {
+            None
         }
-        None
     }
 
-
     pub fn new_row(&mut self, row: u32) -> io::Result<u32> {
-        let sizing_count = if row != 0 { row } else { self.max_rows()? + 1 };
-        self.expand_to(sizing_count)
+        self.expand_to(if row != 0 { row } else { self.max_rows + 1 })
     }
 
     pub fn insert(&mut self, value: T) -> Result<u32>
@@ -62,21 +62,19 @@ impl<T> IdxFile<T> {
     }
 
     pub fn delete(&mut self, row: u32) -> io::Result<()> {
-        if let Ok(max_rows) = self.max_rows() {
-            if row <= max_rows {
-                unsafe { self.triee.delete(row) };
-                if row == max_rows {
-                    let mut current = row - 1;
-                    if current >= 1 {
-                        while let None = self.value(current) {
-                            current -= 1;
-                            if current == 0 {
-                                break;
-                            }
+        if row <= self.max_rows {
+            unsafe { self.triee.delete(row) };
+            if row == self.max_rows {
+                let mut current = row - 1;
+                if current >= 1 {
+                    while let None = self.value(current) {
+                        current -= 1;
+                        if current == 0 {
+                            break;
                         }
                     }
-                    self.resize_to(Self::UNIT_SIZE * (current + 1) as u64)?;
                 }
+                self.resize_to(Self::UNIT_SIZE * (current + 1) as u64)?;
             }
         }
         Ok(())
@@ -84,16 +82,13 @@ impl<T> IdxFile<T> {
 
     pub fn exists(&self, row: u32) -> bool {
         let mut exists = false;
-        if let Ok(max_rows) = self.max_rows() {
-            if row <= max_rows {
-                if let Some(_) = unsafe { self.triee.node(row) } {
-                    exists = true;
-                }
+        if row <= self.max_rows {
+            if let Some(_) = unsafe { self.triee.node(row) } {
+                exists = true;
             }
         }
         exists
     }
-
 
     fn expand_to(&mut self, record_count: u32) -> io::Result<u32> {
         let size = Self::UNIT_SIZE * (record_count + 1) as u64;
@@ -106,10 +101,11 @@ impl<T> IdxFile<T> {
     fn resize_to(&mut self, size: u64) -> io::Result<()> {
         self.mmap.set_len(size)?;
         self.triee = Avltriee::new(self.mmap.as_ptr() as *mut AvltrieeNode<T>);
+        self.max_rows = Self::calc_max_rows(size);
         Ok(())
     }
 
-    fn max_rows(&self) -> io::Result<u32> {
-        Ok((self.mmap.len()? / Self::UNIT_SIZE) as u32 - 1)
+    fn calc_max_rows(file_len: u64) -> u32 {
+        (file_len / Self::UNIT_SIZE) as u32 - 1
     }
 }
