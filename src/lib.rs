@@ -4,12 +4,9 @@ pub use anyhow;
 use anyhow::Result;
 
 use avltriee::AvltrieeNode;
-pub use avltriee::{Avltriee, AvltrieeIter, Found, UOrd};
+pub use avltriee::{Avltriee, AvltrieeHolder, AvltrieeIter, Found};
 use file_mmap::FileMmap;
 
-pub trait RefIdxFile<T> {
-    fn idx(&mut self) -> &mut IdxFile<T>;
-}
 pub struct IdxFile<T> {
     mmap: FileMmap,
     triee: Avltriee<T>,
@@ -43,47 +40,24 @@ impl<T> IdxFile<T> {
         None
     }
 
-    pub fn insert(&mut self, value: T) -> io::Result<u32>
+
+    pub fn new_row(&mut self, row: u32) -> io::Result<u32> {
+        let sizing_count = if row != 0 { row } else { self.max_rows()? + 1 };
+        self.expand_to(sizing_count)
+    }
+
+    pub fn insert(&mut self, value: T) -> Result<u32>
     where
         T: Ord + Clone,
     {
         self.update(0, value)
     }
-    pub fn update(&mut self, row: u32, value: T) -> io::Result<u32>
+    pub fn update(&mut self, row: u32, value: T) -> Result<u32>
     where
         T: Ord + Clone,
     {
         let row = self.new_row(row)?;
-        unsafe {
-            self.triee.update(row, value);
-        }
-        Ok(row)
-    }
-
-    pub fn insert_unique(&mut self, value: T, found: Found) -> io::Result<u32> {
-        let row = self.new_row(0)?;
-        unsafe {
-            self.triee.update_unique(row, value, found);
-        }
-        Ok(row)
-    }
-
-    pub fn insert_uord<H, I>(holder: &mut H, input: I) -> Result<u32>
-    where
-        T: Clone,
-        H: UOrd<T, I> + RefIdxFile<T>,
-    {
-        Self::update_uord(holder, 0, input)
-    }
-    pub fn update_uord<H, I>(holder: &mut H, row: u32, input: I) -> Result<u32>
-    where
-        T: Clone,
-        H: UOrd<T, I> + RefIdxFile<T>,
-    {
-        let row = holder.idx().new_row(row)?;
-        unsafe {
-            Avltriee::update_uord(holder, row, input)?;
-        }
+        unsafe { self.triee.update(row, value)? }
         Ok(row)
     }
 
@@ -120,10 +94,6 @@ impl<T> IdxFile<T> {
         exists
     }
 
-    fn new_row(&mut self, row: u32) -> io::Result<u32> {
-        let sizing_count = if row != 0 { row } else { self.max_rows()? + 1 };
-        self.expand_to(sizing_count)
-    }
 
     fn expand_to(&mut self, record_count: u32) -> io::Result<u32> {
         let size = Self::UNIT_SIZE * (record_count + 1) as u64;
