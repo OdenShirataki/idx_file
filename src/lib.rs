@@ -1,11 +1,11 @@
 use std::{io, mem::size_of, path::Path};
 
-pub use anyhow;
+use avltriee::AvltrieeNode;
+pub use avltriee::{anyhow, Avltriee, AvltrieeHolder, AvltrieeIter, Found};
+
 use anyhow::Result;
 
-use avltriee::AvltrieeNode;
-pub use avltriee::{Avltriee, AvltrieeHolder, AvltrieeIter, Found};
-use file_mmap::FileMmap;
+pub use file_mmap::FileMmap;
 
 pub struct IdxFile<T> {
     mmap: FileMmap,
