@@ -1,4 +1,9 @@
-use std::{io, mem::size_of, path::Path};
+use std::{
+    io,
+    mem::size_of,
+    ops::{Deref, DerefMut},
+    path::Path,
+};
 
 use avltriee::AvltrieeNode;
 pub use avltriee::{anyhow, Avltriee, AvltrieeHolder, AvltrieeIter, Found};
@@ -11,6 +16,17 @@ pub struct IdxFile<T> {
     mmap: FileMmap,
     triee: Avltriee<T>,
     max_rows: u32,
+}
+impl<T> Deref for IdxFile<T> {
+    type Target = Avltriee<T>;
+    fn deref(&self) -> &Self::Target {
+        &self.triee
+    }
+}
+impl<T> DerefMut for IdxFile<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.triee
+    }
 }
 impl<T> IdxFile<T> {
     const UNIT_SIZE: u64 = size_of::<AvltrieeNode<T>>() as u64;
@@ -28,12 +44,7 @@ impl<T> IdxFile<T> {
             max_rows,
         })
     }
-    pub fn triee(&self) -> &Avltriee<T> {
-        &self.triee
-    }
-    pub fn triee_mut(&mut self) -> &mut Avltriee<T> {
-        &mut self.triee
-    }
+
     pub fn value(&self, row: u32) -> Option<&T> {
         if row <= self.max_rows {
             unsafe { self.triee.value(row) }
