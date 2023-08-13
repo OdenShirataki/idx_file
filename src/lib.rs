@@ -65,7 +65,7 @@ impl<T> IdxFile<T> {
         T: Ord + Clone,
     {
         let row = self.new_row(row);
-        unsafe { self.triee.update(row, value).unwrap() }
+        unsafe { self.triee.update(row, value) }
         row
     }
 
