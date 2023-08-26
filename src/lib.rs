@@ -51,7 +51,9 @@ impl<T> IdxFile<T> {
     }
 
     pub fn new_row(&mut self, row: u32) -> u32 {
-        self.expand_to(if row != 0 { row } else { self.max_rows + 1 })
+        let new_row = if row != 0 { row } else { self.max_rows + 1 };
+        self.expand_to(new_row);
+        new_row
     }
 
     pub fn insert(&mut self, value: T) -> u32
@@ -88,21 +90,14 @@ impl<T> IdxFile<T> {
     }
 
     pub fn exists(&self, row: u32) -> bool {
-        let mut exists = false;
-        if row <= self.max_rows {
-            if let Some(_) = unsafe { self.triee.node(row) } {
-                exists = true;
-            }
-        }
-        exists
+        row <= self.max_rows && unsafe { self.triee.node(row) }.is_some()
     }
 
-    fn expand_to(&mut self, record_count: u32) -> u32 {
+    fn expand_to(&mut self, record_count: u32) {
         let size = Self::UNIT_SIZE * (record_count + 1) as u64;
         if self.mmap.len() < size {
             self.resize_to(size);
         }
-        record_count
     }
 
     fn resize_to(&mut self, size: u64) {
