@@ -43,11 +43,9 @@ impl<T> IdxFile<T> {
     }
 
     pub fn value(&self, row: u32) -> Option<&T> {
-        if row <= self.max_rows {
-            unsafe { self.triee.value(row) }
-        } else {
-            None
-        }
+        (row <= self.max_rows)
+            .then(|| unsafe { self.triee.value(row) })
+            .and_then(|v| v)
     }
 
     pub fn new_row(&mut self, row: u32) -> u32 {
