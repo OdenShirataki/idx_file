@@ -16,6 +16,7 @@ pub struct IdxFile<T> {
 }
 impl<T> Deref for IdxFile<T> {
     type Target = Avltriee<T>;
+
     fn deref(&self) -> &Self::Target {
         &self.triee
     }
@@ -42,26 +43,31 @@ impl<T> IdxFile<T> {
         }
     }
 
+    #[inline(always)]
     pub fn value(&self, row: u32) -> Option<&T> {
-        if row <= self.max_rows{
+        if row <= self.max_rows {
             unsafe { self.triee.value(row) }
-        }else{
+        } else {
             None
         }
     }
 
+    #[inline(always)]
     pub fn new_row(&mut self, row: u32) -> u32 {
         let new_row = if row != 0 { row } else { self.max_rows + 1 };
         self.expand_to(new_row);
         new_row
     }
 
+    #[inline(always)]
     pub fn insert(&mut self, value: T) -> u32
     where
         T: Ord + Clone,
     {
         self.update(0, value)
     }
+
+    #[inline(always)]
     pub fn update(&mut self, row: u32, value: T) -> u32
     where
         T: Ord + Clone,
@@ -71,6 +77,7 @@ impl<T> IdxFile<T> {
         row
     }
 
+    #[inline(always)]
     pub fn delete(&mut self, row: u32) {
         if row <= self.max_rows {
             unsafe { self.triee.delete(row) };
@@ -89,10 +96,12 @@ impl<T> IdxFile<T> {
         }
     }
 
+    #[inline(always)]
     pub fn exists(&self, row: u32) -> bool {
         row <= self.max_rows && unsafe { self.triee.node(row) }.is_some()
     }
 
+    #[inline(always)]
     fn expand_to(&mut self, record_count: u32) {
         let size = Self::UNIT_SIZE * (record_count + 1) as u64;
         if self.mmap.len() < size {
@@ -100,12 +109,14 @@ impl<T> IdxFile<T> {
         }
     }
 
+    #[inline(always)]
     fn resize_to(&mut self, size: u64) {
         self.mmap.set_len(size).unwrap();
         self.triee = Avltriee::new(self.mmap.as_ptr() as *mut AvltrieeNode<T>);
         self.max_rows = Self::calc_max_rows(size);
     }
 
+    #[inline(always)]
     fn calc_max_rows(file_len: u64) -> u32 {
         (file_len / Self::UNIT_SIZE) as u32 - 1
     }
