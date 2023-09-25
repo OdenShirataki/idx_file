@@ -45,11 +45,7 @@ impl<T> IdxFile<T> {
 
     #[inline(always)]
     pub fn value(&self, row: u32) -> Option<&T> {
-        if row <= self.max_rows {
-            unsafe { self.triee.value(row) }
-        } else {
-            None
-        }
+        (row <= self.max_rows).then(|| unsafe { self.triee.value_unchecked(row) })
     }
 
     #[inline(always)]
