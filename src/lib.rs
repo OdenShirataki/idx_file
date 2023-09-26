@@ -46,7 +46,8 @@ impl<T> IdxFile<T> {
 
     #[inline(always)]
     pub fn value(&self, row: u32) -> Option<&T> {
-        (row <= self.max_rows).then(|| unsafe { self.triee.value_unchecked(row) })
+        (row <= self.max_rows)
+            .then(|| unsafe { self.triee.value_unchecked(NonZeroU32::new_unchecked(row)) })
     }
 
     #[inline(always)]
@@ -58,20 +59,20 @@ impl<T> IdxFile<T> {
     }
 
     #[inline(always)]
-    pub fn create_row(&mut self) -> u32 {
+    pub fn create_row(&mut self) -> NonZeroU32 {
         let row = self.max_rows + 1;
         self.resize_to(row);
-        row
+        unsafe { NonZeroU32::new_unchecked(row) }
     }
 
     #[inline(always)]
-    pub fn insert(&mut self, value: T) -> u32
+    pub fn insert(&mut self, value: T) -> NonZeroU32
     where
         T: Ord + Clone,
     {
         let row = self.create_row();
         unsafe {
-            self.triee.update(row, value);
+            self.triee.update(row.get(), value);
         }
         row
     }
@@ -81,8 +82,7 @@ impl<T> IdxFile<T> {
     where
         T: Ord + Clone,
     {
-        assert!(row > 0);
-        self.allocate(unsafe { NonZeroU32::new_unchecked(row) });
+        self.allocate(NonZeroU32::new(row).unwrap());
         unsafe {
             self.triee.update(row, value);
         }
