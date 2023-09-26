@@ -1,5 +1,6 @@
 use std::{
     mem::size_of,
+    num::NonZeroU32,
     ops::{Deref, DerefMut},
     path::Path,
 };
@@ -35,7 +36,7 @@ impl<T> IdxFile<T> {
             filemmap.set_len(Self::UNIT_SIZE).unwrap();
         }
         let triee = Avltriee::new(filemmap.as_ptr() as *mut AvltrieeNode<T>);
-        let max_rows = Self::calc_max_rows(filemmap.len());
+        let max_rows = (filemmap.len() / Self::UNIT_SIZE) as u32 - 1;
         IdxFile {
             mmap: filemmap,
             triee,
@@ -49,10 +50,18 @@ impl<T> IdxFile<T> {
     }
 
     #[inline(always)]
-    pub fn new_row(&mut self, row: u32) -> u32 {
-        let new_row = if row != 0 { row } else { self.max_rows + 1 };
-        self.expand_to(new_row);
-        new_row
+    pub fn allocate(&mut self, row: NonZeroU32) {
+        let row = row.get();
+        if row > self.max_rows {
+            self.resize_to(row);
+        }
+    }
+
+    #[inline(always)]
+    pub fn create_row(&mut self) -> u32 {
+        let row = self.max_rows + 1;
+        self.resize_to(row);
+        row
     }
 
     #[inline(always)]
@@ -60,17 +69,23 @@ impl<T> IdxFile<T> {
     where
         T: Ord + Clone,
     {
-        self.update(0, value)
+        let row = self.create_row();
+        unsafe {
+            self.triee.update(row, value);
+        }
+        row
     }
 
     #[inline(always)]
-    pub fn update(&mut self, row: u32, value: T) -> u32
+    pub fn update(&mut self, row: u32, value: T)
     where
         T: Ord + Clone,
     {
-        let row = self.new_row(row);
-        unsafe { self.triee.update(row, value) }
-        row
+        assert!(row > 0);
+        self.allocate(unsafe { NonZeroU32::new_unchecked(row) });
+        unsafe {
+            self.triee.update(row, value);
+        }
     }
 
     #[inline(always)]
@@ -87,7 +102,7 @@ impl<T> IdxFile<T> {
                         }
                     }
                 }
-                self.resize_to(Self::UNIT_SIZE * (current + 1) as u64);
+                self.resize_to(current);
             }
         }
     }
@@ -98,22 +113,10 @@ impl<T> IdxFile<T> {
     }
 
     #[inline(always)]
-    fn expand_to(&mut self, record_count: u32) {
-        let size = Self::UNIT_SIZE * (record_count + 1) as u64;
-        if self.mmap.len() < size {
-            self.resize_to(size);
-        }
-    }
-
-    #[inline(always)]
-    fn resize_to(&mut self, size: u64) {
+    fn resize_to(&mut self, rows: u32) {
+        let size = Self::UNIT_SIZE * (rows + 1) as u64;
         self.mmap.set_len(size).unwrap();
         self.triee = Avltriee::new(self.mmap.as_ptr() as *mut AvltrieeNode<T>);
-        self.max_rows = Self::calc_max_rows(size);
-    }
-
-    #[inline(always)]
-    fn calc_max_rows(file_len: u64) -> u32 {
-        (file_len / Self::UNIT_SIZE) as u32 - 1
+        self.max_rows = rows;
     }
 }
