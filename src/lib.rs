@@ -45,9 +45,8 @@ impl<T> IdxFile<T> {
     }
 
     #[inline(always)]
-    pub fn value(&self, row: u32) -> Option<&T> {
-        (row <= self.max_rows)
-            .then(|| unsafe { self.triee.value_unchecked(NonZeroU32::new_unchecked(row)) })
+    pub fn value(&self, row: NonZeroU32) -> Option<&T> {
+        (row.get() <= self.max_rows).then(|| unsafe { self.triee.value_unchecked(row) })
     }
 
     #[inline(always)]
@@ -72,30 +71,30 @@ impl<T> IdxFile<T> {
     {
         let row = self.create_row();
         unsafe {
-            self.triee.update(row.get(), value);
+            self.triee.update(row, value);
         }
         row
     }
 
     #[inline(always)]
-    pub fn update(&mut self, row: u32, value: T)
+    pub fn update(&mut self, row: NonZeroU32, value: T)
     where
         T: Ord + Clone,
     {
-        self.allocate(NonZeroU32::new(row).unwrap());
+        self.allocate(row);
         unsafe {
             self.triee.update(row, value);
         }
     }
 
     #[inline(always)]
-    pub fn delete(&mut self, row: u32) {
-        if row <= self.max_rows {
+    pub fn delete(&mut self, row: NonZeroU32) {
+        if row.get() <= self.max_rows {
             unsafe { self.triee.delete(row) };
-            if row == self.max_rows {
-                let mut current = row - 1;
+            if row.get() == self.max_rows {
+                let mut current = row.get() - 1;
                 if current >= 1 {
-                    while let None = self.value(current) {
+                    while let None = self.value(unsafe { NonZeroU32::new_unchecked(current) }) {
                         current -= 1;
                         if current == 0 {
                             break;
@@ -108,8 +107,8 @@ impl<T> IdxFile<T> {
     }
 
     #[inline(always)]
-    pub fn exists(&self, row: u32) -> bool {
-        row <= self.max_rows && unsafe { self.triee.node(row) }.is_some()
+    pub fn exists(&self, row: NonZeroU32) -> bool {
+        row.get() <= self.max_rows && unsafe { self.triee.node(row) }.is_some()
     }
 
     #[inline(always)]
