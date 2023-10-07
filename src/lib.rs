@@ -64,26 +64,24 @@ impl<T> IdxFile<T> {
         unsafe { NonZeroU32::new_unchecked(row) }
     }
 
-    #[inline(always)]
-    pub fn insert(&mut self, value: T) -> NonZeroU32
+    pub async fn insert(&mut self, value: T) -> NonZeroU32
     where
-        T: Ord + Clone,
+        T: Send + Sync + Ord + Clone,
     {
         let row = self.create_row();
         unsafe {
-            self.triee.update(row, value);
+            self.triee.update(row, value).await;
         }
         row
     }
 
-    #[inline(always)]
-    pub fn update(&mut self, row: NonZeroU32, value: T)
+    pub async fn update(&mut self, row: NonZeroU32, value: T)
     where
-        T: Ord + Clone,
+        T: Send + Sync + Ord + Clone,
     {
         self.allocate(row);
         unsafe {
-            self.triee.update(row, value);
+            self.triee.update(row, value).await;
         }
     }
 
@@ -118,4 +116,27 @@ impl<T> IdxFile<T> {
         self.triee = Avltriee::new(self.mmap.as_ptr() as *mut AvltrieeNode<T>);
         self.max_rows = rows;
     }
+}
+
+#[test]
+fn test_insert_10000() {
+    use avltriee::Avltriee;
+    use avltriee::AvltrieeNode;
+
+    const TEST_LENGTH: u32 = 1000000;
+
+    let mut list: Vec<AvltrieeNode<u32>> = (0..=TEST_LENGTH)
+        .map(|_| AvltrieeNode::new(0, 0, 0))
+        .collect();
+    let mut t = Avltriee::new(list.as_mut_ptr());
+
+    futures::executor::block_on(async {
+        for i in 1..=TEST_LENGTH {
+            unsafe {
+                t.update(i.try_into().unwrap(), i).await;
+            }
+        }
+    });
+
+    println!("OK:{}", 1000000);
 }
