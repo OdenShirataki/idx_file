@@ -13,7 +13,8 @@ pub use file_mmap::FileMmap;
 pub struct IdxFile<T> {
     mmap: FileMmap,
     triee: Avltriee<T>,
-    max_rows: u32,
+    allocation_lot: u32,
+    rows_capacity: u32,
 }
 impl<T> Deref for IdxFile<T> {
     type Target = Avltriee<T>;
@@ -30,38 +31,43 @@ impl<T> DerefMut for IdxFile<T> {
 impl<T> IdxFile<T> {
     const UNIT_SIZE: u64 = size_of::<AvltrieeNode<T>>() as u64;
 
-    pub fn new<P: AsRef<Path>>(path: P) -> Self {
+    pub fn new<P: AsRef<Path>>(path: P, allocation_lot: u32) -> Self {
         let mut filemmap = FileMmap::new(path).unwrap();
         if filemmap.len() == 0 {
             filemmap.set_len(Self::UNIT_SIZE).unwrap();
         }
+        let rows_capacity = (filemmap.len() / Self::UNIT_SIZE) as u32 - 1;
         let triee = Avltriee::new(filemmap.as_ptr() as *mut AvltrieeNode<T>);
-        let max_rows = (filemmap.len() / Self::UNIT_SIZE) as u32 - 1;
         IdxFile {
             mmap: filemmap,
             triee,
-            max_rows,
+            allocation_lot,
+            rows_capacity,
         }
     }
 
     #[inline(always)]
     pub fn value(&self, row: NonZeroU32) -> Option<&T> {
-        (row.get() <= self.max_rows).then(|| unsafe { self.triee.value_unchecked(row) })
+        (row.get() <= self.max_rows()).then(|| unsafe { self.triee.value_unchecked(row) })
     }
 
     #[inline(always)]
-    pub fn allocate(&mut self, row: NonZeroU32) {
-        let row = row.get();
-        if row > self.max_rows {
-            self.resize_to(row);
+    pub fn allocate(&mut self, min_capacity: NonZeroU32) {
+        let min_capacity = min_capacity.get();
+        if self.rows_capacity < min_capacity {
+            let new_capacity = (min_capacity / self.allocation_lot + 1) * self.allocation_lot;
+            let size = Self::UNIT_SIZE * (new_capacity + 1) as u64;
+            self.mmap.set_len(size).unwrap();
+            self.rows_capacity = new_capacity;
+            self.triee = Avltriee::new(self.mmap.as_ptr() as *mut AvltrieeNode<T>);
         }
     }
 
     #[inline(always)]
     pub fn create_row(&mut self) -> NonZeroU32 {
-        let row = self.max_rows + 1;
-        self.resize_to(row);
-        unsafe { NonZeroU32::new_unchecked(row) }
+        let row = unsafe { NonZeroU32::new_unchecked(self.max_rows() + 1) };
+        self.allocate(row);
+        row
     }
 
     pub async fn insert(&mut self, value: T) -> NonZeroU32
@@ -80,63 +86,36 @@ impl<T> IdxFile<T> {
         T: Send + Sync + Ord + Clone,
     {
         self.allocate(row);
-        unsafe {
-            self.triee.update(row, value).await;
-        }
-    }
-
-    #[inline(always)]
-    pub fn delete(&mut self, row: NonZeroU32) {
-        if row.get() <= self.max_rows {
-            unsafe { self.triee.delete(row) };
-            if row.get() == self.max_rows {
-                let mut current = row.get() - 1;
-                if current >= 1 {
-                    while let None = self.value(unsafe { NonZeroU32::new_unchecked(current) }) {
-                        current -= 1;
-                        if current == 0 {
-                            break;
-                        }
-                    }
-                }
-                self.resize_to(current);
-            }
-        }
+        unsafe { self.triee.update(row, value).await }
     }
 
     #[inline(always)]
     pub fn exists(&self, row: NonZeroU32) -> bool {
-        row.get() <= self.max_rows && unsafe { self.triee.node(row) }.is_some()
-    }
-
-    #[inline(always)]
-    fn resize_to(&mut self, rows: u32) {
-        let size = Self::UNIT_SIZE * (rows + 1) as u64;
-        self.mmap.set_len(size).unwrap();
-        self.triee = Avltriee::new(self.mmap.as_ptr() as *mut AvltrieeNode<T>);
-        self.max_rows = rows;
+        row.get() <= self.max_rows() && unsafe { self.triee.node(row) }.is_some()
     }
 }
 
 #[test]
 fn test_insert_10000() {
-    use avltriee::Avltriee;
-    use avltriee::AvltrieeNode;
+    use std::path::PathBuf;
+
+    let dir = "./test/";
+    if std::path::Path::new(dir).exists() {
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+    std::fs::create_dir_all(dir).unwrap();
+    let path = PathBuf::from("./test/test.i".to_string());
+    let mut idx: IdxFile<u32> = IdxFile::new(path, 1000000);
 
     const TEST_LENGTH: u32 = 1000000;
 
-    let mut list: Vec<AvltrieeNode<u32>> = (0..=TEST_LENGTH)
-        .map(|_| AvltrieeNode::new(0, 0, 0))
-        .collect();
-    let mut t = Avltriee::new(list.as_mut_ptr());
+    idx.allocate(TEST_LENGTH.try_into().unwrap());
 
     futures::executor::block_on(async {
         for i in 1..=TEST_LENGTH {
-            unsafe {
-                t.update(i.try_into().unwrap(), i).await;
-            }
+            idx.insert(i).await;
         }
     });
 
-    println!("OK:{}", 1000000);
+    println!("OK:{}", idx.max_rows());
 }
