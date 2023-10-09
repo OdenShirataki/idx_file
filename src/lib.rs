@@ -53,9 +53,8 @@ impl<T> IdxFile<T> {
 
     #[inline(always)]
     pub fn allocate(&mut self, min_capacity: NonZeroU32) {
-        let min_capacity = min_capacity.get();
-        if self.rows_capacity < min_capacity {
-            let new_capacity = (min_capacity / self.allocation_lot + 1) * self.allocation_lot;
+        if self.rows_capacity < min_capacity.get() {
+            let new_capacity = (min_capacity.get() / self.allocation_lot + 1) * self.allocation_lot;
             let size = Self::UNIT_SIZE * (new_capacity + 1) as u64;
             self.mmap.set_len(size).unwrap();
             self.rows_capacity = new_capacity;
@@ -81,7 +80,7 @@ impl<T> IdxFile<T> {
         row
     }
 
-    pub async fn update(&mut self, row: NonZeroU32, value: T)
+    pub async fn update_with_allocate(&mut self, row: NonZeroU32, value: T)
     where
         T: Send + Sync + Ord + Clone,
     {
