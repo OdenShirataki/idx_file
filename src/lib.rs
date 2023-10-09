@@ -10,25 +10,25 @@ pub use avltriee::{Avltriee, AvltrieeHolder, AvltrieeIter, Found};
 
 pub use file_mmap::FileMmap;
 
-pub struct IdxFile<T> {
+pub struct IdxFile<T: Copy> {
     mmap: FileMmap,
     triee: Avltriee<T>,
     allocation_lot: u32,
     rows_capacity: u32,
 }
-impl<T> Deref for IdxFile<T> {
+impl<T: Copy> Deref for IdxFile<T> {
     type Target = Avltriee<T>;
 
     fn deref(&self) -> &Self::Target {
         &self.triee
     }
 }
-impl<T> DerefMut for IdxFile<T> {
+impl<T: Copy> DerefMut for IdxFile<T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.triee
     }
 }
-impl<T> IdxFile<T> {
+impl<T: Copy> IdxFile<T> {
     const UNIT_SIZE: u64 = size_of::<AvltrieeNode<T>>() as u64;
 
     pub fn new<P: AsRef<Path>>(path: P, allocation_lot: u32) -> Self {
