@@ -10,25 +10,25 @@ pub use avltriee::{Avltriee, AvltrieeHolder, AvltrieeIter, Found};
 
 pub use file_mmap::FileMmap;
 
-pub struct IdxFile<T: Copy> {
+pub struct IdxFile<T> {
     mmap: FileMmap,
     triee: Avltriee<T>,
     allocation_lot: u32,
     rows_capacity: u32,
 }
-impl<T: Copy> Deref for IdxFile<T> {
+impl<T> Deref for IdxFile<T> {
     type Target = Avltriee<T>;
 
     fn deref(&self) -> &Self::Target {
         &self.triee
     }
 }
-impl<T: Copy> DerefMut for IdxFile<T> {
+impl<T> DerefMut for IdxFile<T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.triee
     }
 }
-impl<T: Copy> IdxFile<T> {
+impl<T> IdxFile<T> {
     const UNIT_SIZE: u64 = size_of::<AvltrieeNode<T>>() as u64;
 
     pub fn new<P: AsRef<Path>>(path: P, allocation_lot: u32) -> Self {
@@ -71,7 +71,7 @@ impl<T: Copy> IdxFile<T> {
 
     pub async fn insert(&mut self, value: T) -> NonZeroU32
     where
-        T: Send + Sync + Ord + Clone,
+        T: Send + Sync + Ord + Copy,
     {
         let row = self.create_row();
         unsafe {
@@ -82,7 +82,7 @@ impl<T: Copy> IdxFile<T> {
 
     pub async fn update_with_allocate(&mut self, row: NonZeroU32, value: T)
     where
-        T: Send + Sync + Ord + Clone,
+        T: Send + Sync + Ord + Copy,
     {
         self.allocate(row);
         unsafe { self.triee.update(row, value).await }
