@@ -54,10 +54,11 @@ impl<T> IdxFile<T> {
     #[inline(always)]
     pub fn allocate(&mut self, min_capacity: NonZeroU32) {
         if self.rows_capacity < min_capacity.get() {
-            let new_capacity = (min_capacity.get() / self.allocation_lot + 1) * self.allocation_lot;
-            let size = Self::UNIT_SIZE * (new_capacity + 1) as u64;
-            self.mmap.set_len(size).unwrap();
-            self.rows_capacity = new_capacity;
+            self.rows_capacity =
+                (min_capacity.get() / self.allocation_lot + 1) * self.allocation_lot;
+            self.mmap
+                .set_len(Self::UNIT_SIZE * (self.rows_capacity + 1) as u64)
+                .unwrap();
             self.triee = Avltriee::new(self.mmap.as_ptr() as *mut AvltrieeNode<T>);
         }
     }
