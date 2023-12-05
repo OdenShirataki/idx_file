@@ -1,6 +1,6 @@
 [package]
 name = "idx_file"
-version = "0.46.2"
+version = "0.46.3"
 edition = "2021"
 
 authors = ["Oden Shirataki <oden.srtk@gmail.com>"]
@@ -14,8 +14,8 @@ categories = ["filesystem","algorithms"]
 license = "MIT/Apache-2.0"
 
 [dependencies]
-avltriee = { version = "0.57" , path = "../avltriee" }
-file_mmap = { version = "0.19" , path = "../file_mmap" }
+avltriee = "0.57"
+file_mmap = "0.19"
 
 [dev-dependencies]
 futures = "0.3"
