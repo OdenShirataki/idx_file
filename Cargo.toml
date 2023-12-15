@@ -1,6 +1,6 @@
 [package]
 name = "idx_file"
-version = "0.46.3"
+version = "0.46.4"
 edition = "2021"
 
 authors = ["Oden Shirataki <oden.srtk@gmail.com>"]
@@ -9,8 +9,8 @@ description = "This is a library for handling single-dimensional array data. It 
 
 repository = "https://github.com/OdenShirataki/idx_file"
 
-keywords = ["index","file","avltree","memmap","data"]
-categories = ["filesystem","algorithms"]
+keywords = ["index", "file", "avltree", "memmap", "data"]
+categories = ["filesystem", "algorithms"]
 license = "MIT/Apache-2.0"
 
 [dependencies]
@@ -18,4 +18,4 @@ avltriee = "0.57"
 file_mmap = "0.19"
 
 [dev-dependencies]
-futures = "0.3"
+futures = "0.3.29"
