@@ -3,6 +3,7 @@ use std::{
     num::NonZeroU32,
     ops::{Deref, DerefMut},
     path::Path,
+    ptr::NonNull,
 };
 
 use avltriee::AvltrieeNode;
@@ -16,6 +17,7 @@ pub struct IdxFile<T> {
     allocation_lot: u32,
     rows_capacity: u32,
 }
+
 impl<T> Deref for IdxFile<T> {
     type Target = Avltriee<T>;
 
@@ -37,7 +39,9 @@ impl<T> IdxFile<T> {
             filemmap.set_len(Self::UNIT_SIZE).unwrap();
         }
         let rows_capacity = (filemmap.len() / Self::UNIT_SIZE) as u32 - 1;
-        let triee = Avltriee::new(filemmap.as_ptr() as *mut AvltrieeNode<T>);
+        let triee = Avltriee::new(unsafe {
+            NonNull::new_unchecked(filemmap.as_ptr() as *mut AvltrieeNode<T>)
+        });
         IdxFile {
             mmap: filemmap,
             triee,
@@ -59,7 +63,9 @@ impl<T> IdxFile<T> {
             self.mmap
                 .set_len(Self::UNIT_SIZE * (self.rows_capacity + 1) as u64)
                 .unwrap();
-            self.triee = Avltriee::new(self.mmap.as_ptr() as *mut AvltrieeNode<T>);
+            self.triee = Avltriee::new(unsafe {
+                NonNull::new_unchecked(self.mmap.as_ptr() as *mut AvltrieeNode<T>)
+            });
         }
     }
 
@@ -72,7 +78,7 @@ impl<T> IdxFile<T> {
 
     pub async fn insert(&mut self, value: T) -> NonZeroU32
     where
-        T: Send + Sync + Ord + Copy,
+        T: Ord + Copy,
     {
         let row = self.create_row();
         unsafe {
@@ -83,7 +89,7 @@ impl<T> IdxFile<T> {
 
     pub async fn update_with_allocate(&mut self, row: NonZeroU32, value: T)
     where
-        T: Send + Sync + Ord + Copy,
+        T: Ord + Copy,
     {
         self.allocate(row);
         unsafe { self.triee.update(row, value).await }
