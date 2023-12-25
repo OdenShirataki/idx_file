@@ -33,6 +33,11 @@ impl<T> DerefMut for IdxFile<T> {
 impl<T> IdxFile<T> {
     const UNIT_SIZE: u64 = size_of::<AvltrieeNode<T>>() as u64;
 
+    /// Opens the file and creates the IdxFile<T>.
+    /// # Arguments
+    /// * `path` - Path of file to save data
+    /// * `allocation_lot` - Extends the specified size when the file size becomes insufficient due to data addition.
+    /// If you expect to add a lot of data, specifying a larger size will improve performance.
     pub fn new<P: AsRef<Path>>(path: P, allocation_lot: u32) -> Self {
         let mut filemmap = FileMmap::new(path).unwrap();
         if filemmap.len() == 0 {
@@ -42,7 +47,7 @@ impl<T> IdxFile<T> {
         let triee = Avltriee::new(unsafe {
             NonNull::new_unchecked(filemmap.as_ptr() as *mut AvltrieeNode<T>)
         });
-        IdxFile {
+        Self {
             mmap: filemmap,
             triee,
             allocation_lot,
@@ -50,12 +55,14 @@ impl<T> IdxFile<T> {
         }
     }
 
-    #[inline(always)]
+    /// Gets the value of the specified row. Returns None if a non-existent row is specified.
     pub fn value(&self, row: NonZeroU32) -> Option<&T> {
         (row.get() <= self.max_rows()).then(|| unsafe { self.triee.value_unchecked(row) })
     }
 
-    #[inline(always)]
+    /// Expand data storage space.
+    /// # Arguments
+    /// * `min_capacity` - Specify the number of rows to expand. If allocation_lot is a larger value, it may be expanded by allocation_lot.
     pub fn allocate(&mut self, min_capacity: NonZeroU32) {
         if self.rows_capacity < min_capacity.get() {
             self.rows_capacity =
@@ -69,13 +76,14 @@ impl<T> IdxFile<T> {
         }
     }
 
-    #[inline(always)]
+    /// Add capacity for new row.
     pub fn create_row(&mut self) -> NonZeroU32 {
         let row = unsafe { NonZeroU32::new_unchecked(self.max_rows() + 1) };
         self.allocate(row);
         row
     }
 
+    /// Creates a new row and assigns a value to it..
     pub async fn insert(&mut self, value: T) -> NonZeroU32
     where
         T: Ord + Copy,
@@ -87,6 +95,7 @@ impl<T> IdxFile<T> {
         row
     }
 
+    /// Updates the value of the specified row. If capacity is insufficient, it will be expanded automatically.
     pub async fn update_with_allocate(&mut self, row: NonZeroU32, value: T)
     where
         T: Ord + Copy,
@@ -95,7 +104,7 @@ impl<T> IdxFile<T> {
         unsafe { self.triee.update(row, value).await }
     }
 
-    #[inline(always)]
+    /// Check if row exists.
     pub fn exists(&self, row: NonZeroU32) -> bool {
         row.get() <= self.max_rows() && unsafe { self.triee.node(row) }.is_some()
     }
