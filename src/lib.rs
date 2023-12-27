@@ -57,7 +57,7 @@ impl<T> IdxFile<T> {
 
     /// Gets the value of the specified row. Returns None if a non-existent row is specified.
     pub fn value(&self, row: NonZeroU32) -> Option<&T> {
-        (row.get() <= self.max_rows()).then(|| unsafe { self.triee.value_unchecked(row) })
+        (row.get() <= self.capacity()).then(|| unsafe { self.triee.value_unchecked(row) })
     }
 
     /// Expand data storage space.
@@ -78,7 +78,7 @@ impl<T> IdxFile<T> {
 
     /// Add capacity for new row.
     pub fn create_row(&mut self) -> NonZeroU32 {
-        let row = unsafe { NonZeroU32::new_unchecked(self.max_rows() + 1) };
+        let row = unsafe { NonZeroU32::new_unchecked(self.capacity() + 1) };
         self.allocate(row);
         row
     }
@@ -106,7 +106,7 @@ impl<T> IdxFile<T> {
 
     /// Check if row exists.
     pub fn exists(&self, row: NonZeroU32) -> bool {
-        row.get() <= self.max_rows() && unsafe { self.triee.node(row) }.is_some()
+        row.get() <= self.capacity() && unsafe { self.triee.node(row) }.is_some()
     }
 }
 
@@ -132,5 +132,5 @@ fn test_insert_10000() {
         }
     });
 
-    println!("OK:{}", idx.max_rows());
+    println!("OK:{}", idx.capacity());
 }
