@@ -86,7 +86,7 @@ impl<T> IdxFile<T> {
     /// Creates a new row and assigns a value to it..
     pub async fn insert(&mut self, value: T) -> NonZeroU32
     where
-        T: Ord + Copy,
+        T: Ord + Clone,
     {
         let row = self.create_row();
         unsafe {
@@ -98,7 +98,7 @@ impl<T> IdxFile<T> {
     /// Updates the value of the specified row. If capacity is insufficient, it will be expanded automatically.
     pub async fn update_with_allocate(&mut self, row: NonZeroU32, value: T)
     where
-        T: Ord + Copy,
+        T: Ord + Clone,
     {
         self.allocate(row);
         unsafe { self.triee.update(row, value).await }
