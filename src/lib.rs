@@ -5,17 +5,17 @@ use std::{
     path::Path,
 };
 
-use allocator::IdxFileAvltrieeAllocator;
+pub use allocator::IdxFileAllocator;
 pub use avltriee::{Avltriee, AvltrieeHolder, AvltrieeIter, Found};
 
 pub use file_mmap::FileMmap;
 
 pub struct IdxFile<T> {
-    triee: Avltriee<T>,
+    triee: Avltriee<T, IdxFileAllocator<T>>,
 }
 
 impl<T> Deref for IdxFile<T> {
-    type Target = Avltriee<T>;
+    type Target = Avltriee<T, IdxFileAllocator<T>>;
 
     fn deref(&self) -> &Self::Target {
         &self.triee
@@ -36,10 +36,7 @@ impl<T: 'static> IdxFile<T> {
     /// If you expect to add a lot of data, specifying a larger size will improve performance.
     pub fn new<P: AsRef<Path>>(path: P, allocation_lot: u32) -> Self {
         Self {
-            triee: Avltriee::with_allocator(Box::new(IdxFileAvltrieeAllocator::new(
-                path,
-                allocation_lot,
-            ))),
+            triee: Avltriee::with_allocator(IdxFileAllocator::new(path, allocation_lot)),
         }
     }
 }

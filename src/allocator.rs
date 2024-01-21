@@ -3,14 +3,14 @@ use std::{marker::PhantomData, mem::size_of, path::Path};
 use avltriee::{AvltrieeAllocator, AvltrieeNode};
 use file_mmap::FileMmap;
 
-pub struct IdxFileAvltrieeAllocator<T> {
+pub struct IdxFileAllocator<T> {
     mmap: FileMmap,
     allocation_lot: u32,
     rows_capacity: u32,
     _marker: PhantomData<fn() -> T>,
 }
 
-impl<T> IdxFileAvltrieeAllocator<T> {
+impl<T> IdxFileAllocator<T> {
     const UNIT_SIZE: u64 = size_of::<AvltrieeNode<T>>() as u64;
 
     pub fn new<P: AsRef<Path>>(path: P, allocation_lot: u32) -> Self {
@@ -19,7 +19,7 @@ impl<T> IdxFileAvltrieeAllocator<T> {
             mmap.set_len(Self::UNIT_SIZE).unwrap();
         }
         let rows_capacity = (mmap.len() / Self::UNIT_SIZE) as u32 - 1;
-        IdxFileAvltrieeAllocator {
+        IdxFileAllocator {
             mmap,
             allocation_lot,
             rows_capacity,
@@ -28,7 +28,7 @@ impl<T> IdxFileAvltrieeAllocator<T> {
     }
 }
 
-impl<T> AvltrieeAllocator<T> for IdxFileAvltrieeAllocator<T> {
+impl<T> AvltrieeAllocator<T> for IdxFileAllocator<T> {
     fn as_ptr(&self) -> *const AvltrieeNode<T> {
         self.mmap.as_ptr() as *const AvltrieeNode<T>
     }
@@ -52,5 +52,4 @@ impl<T> AvltrieeAllocator<T> for IdxFileAvltrieeAllocator<T> {
     fn get(&self, row: std::num::NonZeroU32) -> Option<&AvltrieeNode<T>> {
         Some(unsafe { &*self.as_ptr().offset(row.get() as isize) })
     }
-
 }
