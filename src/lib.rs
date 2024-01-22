@@ -28,7 +28,7 @@ impl<T> DerefMut for IdxFile<T> {
     }
 }
 
-impl<T: 'static> IdxFile<T> {
+impl<T> IdxFile<T> {
     /// Opens the file and creates the IdxFile<T>.
     /// # Arguments
     /// * `path` - Path of file to save data
