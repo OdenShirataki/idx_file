@@ -55,11 +55,9 @@ fn test_insert_10000() {
 
     const TEST_LENGTH: u32 = 1000000;
 
-    futures::executor::block_on(async {
-        for i in 1..=TEST_LENGTH {
-            idx.insert(i).await;
-        }
-    });
+    for i in 1..=TEST_LENGTH {
+        idx.insert(i);
+    }
 
     println!("OK:{}", idx.rows_count());
 }
