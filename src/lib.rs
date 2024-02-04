@@ -6,29 +6,30 @@ use std::{
 };
 
 pub use allocator::IdxFileAllocator;
-pub use avltriee::{Avltriee, AvltrieeHolder, AvltrieeIter, Found};
+pub use avltriee::{Avltriee, AvltrieeIter, AvltrieeOrd, AvltrieeUpdate, Found};
 
 pub use file_mmap::FileMmap;
 
-pub struct IdxFile<T> {
-    triee: Avltriee<T, IdxFileAllocator<T>>,
+pub type IdxFileAvlTriee<T, I> = Avltriee<T, I, IdxFileAllocator<T>>;
+pub struct IdxFile<T, I: ?Sized = T> {
+    triee: IdxFileAvlTriee<T, I>,
 }
 
-impl<T> Deref for IdxFile<T> {
-    type Target = Avltriee<T, IdxFileAllocator<T>>;
+impl<T, I: ?Sized> Deref for IdxFile<T, I> {
+    type Target = IdxFileAvlTriee<T, I>;
 
     fn deref(&self) -> &Self::Target {
         &self.triee
     }
 }
 
-impl<T> DerefMut for IdxFile<T> {
+impl<T, I: ?Sized> DerefMut for IdxFile<T, I> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.triee
     }
 }
 
-impl<T> IdxFile<T> {
+impl<T, I: ?Sized> IdxFile<T, I> {
     /// Opens the file and creates the IdxFile<T>.
     /// # Arguments
     /// * `path` - Path of file to save data
@@ -56,7 +57,7 @@ fn test_insert_10000() {
     const TEST_LENGTH: u32 = 1000000;
 
     for i in 1..=TEST_LENGTH {
-        idx.insert(i);
+        idx.insert(&i);
     }
 
     println!("OK:{}", idx.rows_count());
