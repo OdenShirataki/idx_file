@@ -37,10 +37,7 @@ impl<T> AvltrieeAllocator<T> for IdxFileAllocator<T> {
         self.mmap.as_mut_ptr() as *mut AvltrieeNode<T>
     }
 
-    fn resize(&mut self, new_capacity: u32)
-    where
-        T: Clone + Default,
-    {
+    fn resize(&mut self, new_capacity: u32) {
         if self.rows_capacity < new_capacity {
             self.rows_capacity = (new_capacity / self.allocation_lot + 1) * self.allocation_lot;
             self.mmap

@@ -23,38 +23,38 @@ let mut idx=IdxFile::<i64>::new("hoge.idx").unwrap();
 
 ### insert
 ```rust
-idx.insert(100).unwrap();
-idx.insert(300).unwrap();
-idx.insert(100).unwrap();
-idx.insert(150).unwrap();
+idx.insert(&100);
+idx.insert(&300);
+idx.insert(&100);
+idx.insert(&150);
 ```
 
 ### update
 ```rust
-idx.update(2, 50).unwrap();
+idx.update(2, &50);
 ```
 
 ### delete
 ```rust
-idx.delete(1).unwrap();
+idx.delete(1);
 ```
 
 ### search
 ```rust
-for i in idx.triee().iter() {
-    println!("{}. {} : {}", i.index(), i.row(), i.value());
+for row in idx.iter() {
+    println!(" {} : {}", row, **unsafe { idx.get_unchecked(row) });
 }
 
-for row in idx.triee().iter_by(|v|v.cmp(&100)) {
-    println!("{}. {} : {}", row.index(),row.row(), row.value());
+for row in idx.iter_by(&100) {
+    println!(" {} : {}", row, **unsafe { idx.get_unchecked(row) });
 }
-for row in idx.triee().iter_by_value_from(&100) {
-    println!("{}. {} : {}", row.index(),row.row(), row.value());
+for row in idx.iter_from(&100) {
+    println!(" {} : {}", row, **unsafe { idx.get_unchecked(row) });
 }
-for row in idx.triee().iter_by_value_to(&200) {
-    println!("{}. {} : {}", row.index(),row.row(), row.value());
+for row in idx.iter_to(&200) {
+    println!(" {} : {}", row, **unsafe { idx.get_unchecked(row) });
 }
-for row in idx.triee().iter_by_value_from_to(&100, &200) {
-    println!("{}. {} : {}", row.index(),row.row(), row.value());
+for row in idx.iter_range(&100, &200) {
+    println!(" {} : {}", row, **unsafe { idx.get_unchecked(row) });
 }
 ```

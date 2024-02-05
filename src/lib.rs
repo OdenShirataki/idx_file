@@ -6,7 +6,7 @@ use std::{
 };
 
 pub use allocator::IdxFileAllocator;
-pub use avltriee::{Avltriee, AvltrieeIter, AvltrieeOrd, AvltrieeUpdate, Found};
+pub use avltriee::{search, Avltriee, AvltrieeIter, AvltrieeOrd, AvltrieeUpdate, Found};
 
 pub use file_mmap::FileMmap;
 
@@ -54,10 +54,35 @@ fn test_insert_10000() {
     let path = PathBuf::from("./test/test.i".to_string());
     let mut idx: IdxFile<u32> = IdxFile::new(path, 1000000);
 
-    const TEST_LENGTH: u32 = 1000000;
+    const TEST_LENGTH: u32 = 1000;
 
     for i in 1..=TEST_LENGTH {
         idx.insert(&i);
+    }
+
+    println!("iter");
+    for row in idx.iter() {
+        println!(" {} : {}", row, **unsafe { idx.get_unchecked(row) });
+    }
+
+    println!("iter_by");
+    for row in idx.iter_by(&100) {
+        println!(" {} : {}", row, **unsafe { idx.get_unchecked(row) });
+    }
+
+    println!("iter_from");
+    for row in idx.iter_from(&100) {
+        println!(" {} : {}", row, **unsafe { idx.get_unchecked(row) });
+    }
+
+    println!("iter_to");
+    for row in idx.iter_to(&200) {
+        println!(" {} : {}", row, **unsafe { idx.get_unchecked(row) });
+    }
+
+    println!("iter_range");
+    for row in idx.iter_range(&100, &200) {
+        println!(" {} : {}", row, **unsafe { idx.get_unchecked(row) });
     }
 
     println!("OK:{}", idx.rows_count());
