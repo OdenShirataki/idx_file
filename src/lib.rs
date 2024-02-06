@@ -6,11 +6,12 @@ use std::{
 };
 
 pub use allocator::IdxFileAllocator;
-pub use avltriee::{search, Avltriee, AvltrieeIter, AvltrieeOrd, AvltrieeUpdate, Found};
+pub use avltriee::{search, Avltriee, AvltrieeIter, AvltrieeSearch, AvltrieeUpdate};
 
 pub use file_mmap::FileMmap;
 
 pub type IdxFileAvlTriee<T, I> = Avltriee<T, I, IdxFileAllocator<T>>;
+
 pub struct IdxFile<T, I: ?Sized = T> {
     triee: IdxFileAvlTriee<T, I>,
 }
