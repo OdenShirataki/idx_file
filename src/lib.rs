@@ -63,27 +63,27 @@ fn test_insert_10000() {
 
     println!("iter");
     for row in idx.iter() {
-        println!(" {} : {}", row, **unsafe { idx.get_unchecked(row) });
+        println!(" {} : {}", row, unsafe { idx.value_unchecked(row) });
     }
 
     println!("iter_by");
     for row in idx.iter_by(&100) {
-        println!(" {} : {}", row, **unsafe { idx.get_unchecked(row) });
+        println!(" {} : {}", row, unsafe { idx.value_unchecked(row) });
     }
 
     println!("iter_from");
     for row in idx.iter_from(&100) {
-        println!(" {} : {}", row, **unsafe { idx.get_unchecked(row) });
+        println!(" {} : {}", row, unsafe { idx.value_unchecked(row) });
     }
 
     println!("iter_to");
     for row in idx.iter_to(&200) {
-        println!(" {} : {}", row, **unsafe { idx.get_unchecked(row) });
+        println!(" {} : {}", row, unsafe { idx.value_unchecked(row) });
     }
 
     println!("iter_range");
     for row in idx.iter_range(&100, &200) {
-        println!(" {} : {}", row, **unsafe { idx.get_unchecked(row) });
+        println!(" {} : {}", row, unsafe { idx.value_unchecked(row) });
     }
 
     println!("OK:{}", idx.rows_count());
