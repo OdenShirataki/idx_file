@@ -6,7 +6,7 @@ use std::{
 };
 
 pub use allocator::IdxFileAllocator;
-pub use avltriee::{search, Avltriee, AvltrieeIter, AvltrieeSearch, AvltrieeUpdate};
+pub use avltriee::{search, Avltriee, AvltrieeIter, AvltrieeNode, AvltrieeSearch, AvltrieeUpdate};
 
 pub use file_mmap::FileMmap;
 
