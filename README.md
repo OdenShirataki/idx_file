@@ -14,47 +14,43 @@ https://crates.io/crates/idx_sized
 
 
 ## Usage
-### init
-```rust
-use idx_file::IdxFile;
 
-let mut idx=IdxFile::<i64>::new("hoge.idx").unwrap();
-```
-
-### insert
 ```rust
-idx.insert(&100);
-idx.insert(&300);
-idx.insert(&100);
-idx.insert(&150);
-```
+use std::num::NonZeroU32;
 
-### update
-```rust
-idx.update(2, &50);
-```
+use idx_file::{AvltrieeSearch, AvltrieeUpdate, IdxFile};
 
-### delete
-```rust
-idx.delete(1);
-```
+let dir = std::env::temp_dir().join("idx_file-readme");
+std::fs::create_dir_all(&dir).unwrap();
+let path = dir.join("readme.i");
+let _ = std::fs::remove_file(&path);
 
-### search
-```rust
+// The second argument is the number of rows to extend the file by at once.
+let mut idx = IdxFile::<i64>::new(&path, 100);
+
+// insert returns the row of the new value.
+let row1 = idx.insert(&100);
+let row2 = idx.insert(&300);
+let row3 = idx.insert(&100);
+let row4 = idx.insert(&150);
+
+// update and delete by row.
+idx.update(row2, &50);
+idx.delete(row1);
+
+assert_eq!(idx.value(row2), Some(&50));
+assert_eq!(idx.value(row1), None);
+assert_eq!(idx.value(NonZeroU32::new(99).unwrap()), None);
+
+// iterate rows in value order.
 for row in idx.iter() {
-    println!(" {} : {}", row, **unsafe { idx.get_unchecked(row) });
+    println!("{} : {}", row, idx.value(row).unwrap());
 }
+assert_eq!(idx.iter_by(&100).collect::<Vec<_>>(), [row3]);
+assert_eq!(idx.iter_range(&100, &200).collect::<Vec<_>>(), [row3, row4]);
 
-for row in idx.iter_by(&100) {
-    println!(" {} : {}", row, **unsafe { idx.get_unchecked(row) });
-}
-for row in idx.iter_from(&100) {
-    println!(" {} : {}", row, **unsafe { idx.get_unchecked(row) });
-}
-for row in idx.iter_to(&200) {
-    println!(" {} : {}", row, **unsafe { idx.get_unchecked(row) });
-}
-for row in idx.iter_range(&100, &200) {
-    println!(" {} : {}", row, **unsafe { idx.get_unchecked(row) });
-}
+// the data is saved to the file.
+drop(idx);
+let idx = IdxFile::<i64>::new(&path, 100);
+assert_eq!(idx.value(row4), Some(&150));
 ```

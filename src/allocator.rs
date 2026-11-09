@@ -15,7 +15,7 @@ impl<T> IdxFileAllocator<T> {
 
     pub fn new<P: AsRef<Path>>(path: P, allocation_lot: u32) -> Self {
         let mut mmap = FileMmap::new(path).unwrap();
-        if mmap.len() == 0 {
+        if mmap.is_empty() {
             mmap.set_len(Self::UNIT_SIZE).unwrap();
         }
         let rows_capacity = (mmap.len() / Self::UNIT_SIZE) as u32 - 1;

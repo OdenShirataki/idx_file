@@ -1,3 +1,7 @@
+#[cfg(doctest)]
+#[doc = include_str!("../README.md")]
+struct ReadmeDoctests;
+
 mod allocator;
 
 use std::{
@@ -6,7 +10,7 @@ use std::{
 };
 
 pub use allocator::IdxFileAllocator;
-pub use avltriee::{search, Avltriee, AvltrieeIter, AvltrieeNode, AvltrieeSearch, AvltrieeUpdate};
+pub use avltriee::{Avltriee, AvltrieeIter, AvltrieeNode, AvltrieeSearch, AvltrieeUpdate, search};
 
 pub use file_mmap::FileMmap;
 
@@ -35,10 +39,10 @@ impl<T, I: ?Sized> IdxFile<T, I> {
     /// # Arguments
     /// * `path` - Path of file to save data
     /// * `allocation_lot` - Extends the specified size when the file size becomes insufficient due to data addition.
-    /// If you expect to add a lot of data, specifying a larger size will improve performance.
+    ///   If you expect to add a lot of data, specifying a larger size will improve performance.
     pub fn new<P: AsRef<Path>>(path: P, allocation_lot: u32) -> Self {
         Self {
-            triee: Avltriee::with_allocator(IdxFileAllocator::new(path, allocation_lot)),
+            triee: Avltriee::new_in(IdxFileAllocator::new(path, allocation_lot)),
         }
     }
 }
