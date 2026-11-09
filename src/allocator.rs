@@ -47,6 +47,7 @@ impl<T> AvltrieeAllocator<T> for IdxFileAllocator<T> {
     }
 
     fn get(&self, row: std::num::NonZeroU32) -> Option<&AvltrieeNode<T>> {
-        Some(unsafe { &*self.as_ptr().offset(row.get() as isize) })
+        (row.get() <= self.rows_capacity)
+            .then(|| unsafe { &*self.as_ptr().offset(row.get() as isize) })
     }
 }
